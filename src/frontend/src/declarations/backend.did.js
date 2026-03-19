@@ -8,11 +8,24 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const BookingStatus = IDL.Variant({
+  'cancelled' : IDL.Null,
+  'expired' : IDL.Null,
+  'pending' : IDL.Null,
+  'approved' : IDL.Null,
+  'rejected' : IDL.Null,
+});
+export const PaymentStatus = IDL.Variant({
+  'submitted' : IDL.Null,
+  'pending' : IDL.Null,
+  'paid' : IDL.Null,
+});
 export const Booking = IDL.Record({
   'id' : IDL.Nat,
-  'status' : IDL.Text,
-  'paymentStatus' : IDL.Text,
+  'status' : BookingStatus,
+  'paymentStatus' : PaymentStatus,
   'studentName' : IDL.Text,
+  'expiryDate' : IDL.Text,
   'upiTransactionId' : IDL.Text,
   'seatId' : IDL.Nat,
   'bookingDuration' : IDL.Text,
@@ -33,6 +46,19 @@ export const BookingResult = IDL.Record({
   'password' : IDL.Text,
 });
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
+export const MessageStatus = IDL.Variant({
+  'read' : IDL.Null,
+  'unread' : IDL.Null,
+});
+export const Message = IDL.Record({
+  'id' : IDL.Nat,
+  'status' : MessageStatus,
+  'content' : IDL.Text,
+  'bookingId' : IDL.Nat,
+  'recipient' : IDL.Text,
+  'sender' : IDL.Text,
+  'timestamp' : IDL.Int,
+});
 export const Room = IDL.Record({
   'id' : IDL.Nat,
   'isAC' : IDL.Bool,
@@ -55,9 +81,15 @@ export const idlService = IDL.Service({
   'approveBooking' : IDL.Func([IDL.Nat], [Booking], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'cancelBooking' : IDL.Func([IDL.Nat], [Booking], []),
+  'checkAndUpdateBookingExpired' : IDL.Func(
+      [IDL.Nat, IDL.Text],
+      [IDL.Bool],
+      [],
+    ),
   'createBooking' : IDL.Func(
       [
         IDL.Nat,
+        IDL.Text,
         IDL.Text,
         IDL.Text,
         IDL.Text,
@@ -69,6 +101,7 @@ export const idlService = IDL.Service({
       [BookingResult],
       [],
     ),
+  'deleteBooking' : IDL.Func([IDL.Nat], [IDL.Bool], []),
   'getBookedSeatIds' : IDL.Func(
       [IDL.Text, IDL.Text],
       [IDL.Vec(IDL.Nat)],
@@ -81,8 +114,10 @@ export const idlService = IDL.Service({
     ),
   'getBookings' : IDL.Func([], [IDL.Vec(Booking)], ['query']),
   'getBookingsByDate' : IDL.Func([IDL.Text], [IDL.Vec(Booking)], ['query']),
+  'getBookingsByStudent' : IDL.Func([IDL.Text], [IDL.Vec(Booking)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getMessagesByBooking' : IDL.Func([IDL.Nat], [IDL.Vec(Message)], ['query']),
   'getRooms' : IDL.Func([], [IDL.Vec(Room)], ['query']),
   'getSeat' : IDL.Func([IDL.Nat], [Seat], ['query']),
   'getSeatsByRoom' : IDL.Func([IDL.Nat], [IDL.Vec(Seat)], ['query']),
@@ -97,8 +132,16 @@ export const idlService = IDL.Service({
       [IDL.Bool],
       ['query'],
     ),
+  'markAllMessagesAsRead' : IDL.Func([IDL.Text], [IDL.Vec(Message)], []),
+  'markMessageAsRead' : IDL.Func([IDL.Nat], [Message], []),
+  'rebookSeat' : IDL.Func([IDL.Text, IDL.Text], [BookingResult], []),
   'rejectBooking' : IDL.Func([IDL.Nat], [Booking], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'sendMessage' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Int],
+      [Message],
+      [],
+    ),
   'updateBookingPayment' : IDL.Func([IDL.Nat, IDL.Text], [Booking], []),
   'updateSeatAvailability' : IDL.Func([IDL.Nat, IDL.Bool], [Seat], []),
 });
@@ -106,11 +149,24 @@ export const idlService = IDL.Service({
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const BookingStatus = IDL.Variant({
+    'cancelled' : IDL.Null,
+    'expired' : IDL.Null,
+    'pending' : IDL.Null,
+    'approved' : IDL.Null,
+    'rejected' : IDL.Null,
+  });
+  const PaymentStatus = IDL.Variant({
+    'submitted' : IDL.Null,
+    'pending' : IDL.Null,
+    'paid' : IDL.Null,
+  });
   const Booking = IDL.Record({
     'id' : IDL.Nat,
-    'status' : IDL.Text,
-    'paymentStatus' : IDL.Text,
+    'status' : BookingStatus,
+    'paymentStatus' : PaymentStatus,
     'studentName' : IDL.Text,
+    'expiryDate' : IDL.Text,
     'upiTransactionId' : IDL.Text,
     'seatId' : IDL.Nat,
     'bookingDuration' : IDL.Text,
@@ -131,6 +187,16 @@ export const idlFactory = ({ IDL }) => {
     'password' : IDL.Text,
   });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
+  const MessageStatus = IDL.Variant({ 'read' : IDL.Null, 'unread' : IDL.Null });
+  const Message = IDL.Record({
+    'id' : IDL.Nat,
+    'status' : MessageStatus,
+    'content' : IDL.Text,
+    'bookingId' : IDL.Nat,
+    'recipient' : IDL.Text,
+    'sender' : IDL.Text,
+    'timestamp' : IDL.Int,
+  });
   const Room = IDL.Record({
     'id' : IDL.Nat,
     'isAC' : IDL.Bool,
@@ -153,9 +219,15 @@ export const idlFactory = ({ IDL }) => {
     'approveBooking' : IDL.Func([IDL.Nat], [Booking], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'cancelBooking' : IDL.Func([IDL.Nat], [Booking], []),
+    'checkAndUpdateBookingExpired' : IDL.Func(
+        [IDL.Nat, IDL.Text],
+        [IDL.Bool],
+        [],
+      ),
     'createBooking' : IDL.Func(
         [
           IDL.Nat,
+          IDL.Text,
           IDL.Text,
           IDL.Text,
           IDL.Text,
@@ -167,6 +239,7 @@ export const idlFactory = ({ IDL }) => {
         [BookingResult],
         [],
       ),
+    'deleteBooking' : IDL.Func([IDL.Nat], [IDL.Bool], []),
     'getBookedSeatIds' : IDL.Func(
         [IDL.Text, IDL.Text],
         [IDL.Vec(IDL.Nat)],
@@ -179,8 +252,14 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getBookings' : IDL.Func([], [IDL.Vec(Booking)], ['query']),
     'getBookingsByDate' : IDL.Func([IDL.Text], [IDL.Vec(Booking)], ['query']),
+    'getBookingsByStudent' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(Booking)],
+        ['query'],
+      ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getMessagesByBooking' : IDL.Func([IDL.Nat], [IDL.Vec(Message)], ['query']),
     'getRooms' : IDL.Func([], [IDL.Vec(Room)], ['query']),
     'getSeat' : IDL.Func([IDL.Nat], [Seat], ['query']),
     'getSeatsByRoom' : IDL.Func([IDL.Nat], [IDL.Vec(Seat)], ['query']),
@@ -195,8 +274,16 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Bool],
         ['query'],
       ),
+    'markAllMessagesAsRead' : IDL.Func([IDL.Text], [IDL.Vec(Message)], []),
+    'markMessageAsRead' : IDL.Func([IDL.Nat], [Message], []),
+    'rebookSeat' : IDL.Func([IDL.Text, IDL.Text], [BookingResult], []),
     'rejectBooking' : IDL.Func([IDL.Nat], [Booking], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'sendMessage' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Int],
+        [Message],
+        [],
+      ),
     'updateBookingPayment' : IDL.Func([IDL.Nat, IDL.Text], [Booking], []),
     'updateSeatAvailability' : IDL.Func([IDL.Nat, IDL.Bool], [Seat], []),
   });

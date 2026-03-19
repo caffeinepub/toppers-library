@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  useBookedSeatIds,
+  useBookedSeatIdsByRoom,
   useCreateBooking,
   useRooms,
   useSeatsByRoom,
@@ -170,7 +170,7 @@ export function SeatBookingPage() {
 
   const todayStr = new Date().toISOString().split("T")[0];
 
-  const { data: bookedSeatIds } = useBookedSeatIds(bookingDate, "morning");
+  const { data: bookedSeatIds } = useBookedSeatIdsByRoom(roomIdBig);
   const bookedSet = new Set((bookedSeatIds ?? []).map((id) => id.toString()));
 
   const totalAmount = calcMonthlyPrice(monthlySlot);
@@ -252,7 +252,7 @@ export function SeatBookingPage() {
   };
 
   const totalCount = seats?.length ?? 0;
-  const occupiedCount = bookingDate ? bookedSet.size : 0;
+  const occupiedCount = bookedSet.size;
   const availableCount = totalCount - occupiedCount;
 
   const slotLabel =

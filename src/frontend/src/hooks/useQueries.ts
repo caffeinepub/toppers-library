@@ -74,26 +74,26 @@ export function useBookedSeatIds(date: string, timeSlot: string) {
   });
 }
 
-export function useIsAdmin() {
+export function useBookedSeatIdsByRoom(roomId: bigint) {
   const { actor, isFetching } = useActor();
   return useQuery({
-    queryKey: ["isAdmin"],
+    queryKey: ["bookedSeatIdsByRoom", roomId.toString()],
     queryFn: async () => {
-      if (!actor) return false;
-      return actor.isCallerAdmin();
+      if (!actor) return [];
+      return (actor as any).getBookedSeatIdsByRoom(roomId);
     },
     enabled: !!actor && !isFetching,
   });
 }
 
-// Calls _initialize() on startup to seed rooms and seats if not already done
+// Calls _initialize() and expireOldBookings() on startup
 export function useInitialize() {
   const { actor, isFetching } = useActor();
   useEffect(() => {
     if (actor && !isFetching) {
-      actor._initialize().catch(() => {
-        // silently ignore if already initialized or error
-      });
+      const todayStr = new Date().toISOString().split("T")[0];
+      actor._initialize().catch(() => {});
+      (actor as any).expireOldBookings(todayStr).catch(() => {});
     }
   }, [actor, isFetching]);
 }
@@ -113,11 +113,16 @@ export function useCreateBooking() {
       amount: bigint;
     }) => {
       if (!actor) throw new Error("Not connected");
+      // Compute expiry date = bookingDate + 30 days
+      const startDate = new Date(params.bookingDate);
+      startDate.setDate(startDate.getDate() + 30);
+      const expiryDate = startDate.toISOString().split("T")[0];
       return actor.createBooking(
         params.seatId,
         params.studentName,
         params.studentContact,
         params.bookingDate,
+        expiryDate,
         params.timeSlot,
         params.bookingDuration,
         params.upiTransactionId,
@@ -127,8 +132,89 @@ export function useCreateBooking() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       queryClient.invalidateQueries({ queryKey: ["bookedSeatIds"] });
+      queryClient.invalidateQueries({ queryKey: ["bookedSeatIdsByRoom"] });
       queryClient.invalidateQueries({ queryKey: ["seatAvailable"] });
     },
+  });
+}
+
+export function useRebookSeat() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      studentId: string;
+      password: string;
+      newUpiTransactionId: string;
+    }) => {
+      if (!actor) throw new Error("Not connected");
+      const today = new Date();
+      const newBookingDate = today.toISOString().split("T")[0];
+      const expiryDate = new Date(today);
+      expiryDate.setDate(expiryDate.getDate() + 30);
+      const newExpiryDate = expiryDate.toISOString().split("T")[0];
+      return (actor as any).rebookSeat(
+        params.studentId,
+        params.password,
+        newBookingDate,
+        newExpiryDate,
+        params.newUpiTransactionId,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["bookedSeatIdsByRoom"] });
+    },
+  });
+}
+
+export function useGetMessageByCredentials(
+  studentId: string,
+  password: string,
+  enabled: boolean,
+) {
+  const { actor, isFetching } = useActor();
+  return useQuery({
+    queryKey: ["messageByCredentials", studentId, password],
+    queryFn: async () => {
+      if (!actor || !studentId || !password) return null;
+      return (actor as any).getMessageByCredentials(studentId, password);
+    },
+    enabled: !!actor && !isFetching && enabled && !!studentId && !!password,
+  });
+}
+
+export function useSendMessage() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      bookingId: bigint;
+      content: string;
+    }) => {
+      if (!actor) throw new Error("Not connected");
+      return (actor as any).sendMessage(
+        params.bookingId,
+        params.content,
+        BigInt(Date.now()),
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["messagesByBooking"] });
+    },
+  });
+}
+
+export function useGetMessagesByBooking(bookingId: bigint | null) {
+  const { actor, isFetching } = useActor();
+  return useQuery({
+    queryKey: ["messagesByBooking", bookingId?.toString()],
+    queryFn: async () => {
+      if (!actor || !bookingId) return [];
+      return (actor as any).getMessagesByBooking(bookingId);
+    },
+    enabled: !!actor && !isFetching && bookingId !== null,
   });
 }
 
@@ -241,6 +327,23 @@ export function useDeleteRoom() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
       queryClient.invalidateQueries({ queryKey: ["seats"] });
+    },
+  });
+}
+
+export function useDeleteBooking() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error("Not connected");
+      return (actor as any).deleteBooking(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["seats"] });
+      queryClient.invalidateQueries({ queryKey: ["bookedSeatIds"] });
+      queryClient.invalidateQueries({ queryKey: ["bookedSeatIdsByRoom"] });
     },
   });
 }

@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
-import { useIsAdmin } from "@/hooks/useQueries";
 import { Link } from "@tanstack/react-router";
 import { BookOpen, GraduationCap, Menu, ShieldCheck, X } from "lucide-react";
 import { useState } from "react";
@@ -8,7 +7,6 @@ import { useState } from "react";
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { login, clear, loginStatus, identity } = useInternetIdentity();
-  const { data: isAdmin } = useIsAdmin();
   const isLoggedIn = loginStatus === "success" && !!identity;
 
   const navLinks = [
@@ -64,19 +62,6 @@ export function Navbar() {
               )}
             </Link>
           ))}
-          {isAdmin && (
-            <Link
-              to="/admin"
-              data-ocid="nav.admin_link"
-              className="px-4 py-2 text-sm font-medium text-navy-100 rounded-md hover:text-white hover:bg-navy-700 transition-colors flex items-center gap-1.5"
-              activeProps={{
-                className:
-                  "px-4 py-2 text-sm font-medium text-gold-500 rounded-md bg-navy-700 flex items-center gap-1.5",
-              }}
-            >
-              <ShieldCheck className="w-4 h-4" /> Admin
-            </Link>
-          )}
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
@@ -142,16 +127,7 @@ export function Navbar() {
               )}
             </Link>
           ))}
-          {isAdmin && (
-            <Link
-              to="/admin"
-              data-ocid="nav.admin_link"
-              className="px-3 py-2 text-sm font-medium text-navy-100 rounded-md hover:bg-navy-700 flex items-center gap-1.5"
-              onClick={() => setMobileOpen(false)}
-            >
-              <ShieldCheck className="w-4 h-4" /> Admin
-            </Link>
-          )}
+
           <div className="pt-2 border-t border-navy-700">
             {isLoggedIn ? (
               <Button

@@ -12,9 +12,10 @@ import type { Principal } from '@icp-sdk/core/principal';
 
 export interface Booking {
   'id' : bigint,
-  'status' : string,
-  'paymentStatus' : string,
+  'status' : BookingStatus,
+  'paymentStatus' : PaymentStatus,
   'studentName' : string,
+  'expiryDate' : string,
   'upiTransactionId' : string,
   'seatId' : bigint,
   'bookingDuration' : string,
@@ -29,6 +30,25 @@ export interface BookingResult {
   'bookingId' : bigint,
   'password' : string,
 }
+export type BookingStatus = { 'cancelled' : null } |
+  { 'expired' : null } |
+  { 'pending' : null } |
+  { 'approved' : null } |
+  { 'rejected' : null };
+export interface Message {
+  'id' : bigint,
+  'status' : MessageStatus,
+  'content' : string,
+  'bookingId' : bigint,
+  'recipient' : string,
+  'sender' : string,
+  'timestamp' : bigint,
+}
+export type MessageStatus = { 'read' : null } |
+  { 'unread' : null };
+export type PaymentStatus = { 'submitted' : null } |
+  { 'pending' : null } |
+  { 'paid' : null };
 export interface Room {
   'id' : bigint,
   'isAC' : boolean,
@@ -54,24 +74,35 @@ export interface _SERVICE {
   'approveBooking' : ActorMethod<[bigint], Booking>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'cancelBooking' : ActorMethod<[bigint], Booking>,
+  'checkAndUpdateBookingExpired' : ActorMethod<[bigint, string], boolean>,
   'createBooking' : ActorMethod<
-    [bigint, string, string, string, string, string, string, bigint],
+    [bigint, string, string, string, string, string, string, string, bigint],
     BookingResult
   >,
+  'deleteBooking' : ActorMethod<[bigint], boolean>,
   'getBookedSeatIds' : ActorMethod<[string, string], Array<bigint>>,
   'getBookingByCredentials' : ActorMethod<[string, string], [] | [Booking]>,
   'getBookings' : ActorMethod<[], Array<Booking>>,
   'getBookingsByDate' : ActorMethod<[string], Array<Booking>>,
+  'getBookingsByStudent' : ActorMethod<[string], Array<Booking>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getMessagesByBooking' : ActorMethod<[bigint], Array<Message>>,
   'getRooms' : ActorMethod<[], Array<Room>>,
   'getSeat' : ActorMethod<[bigint], Seat>,
   'getSeatsByRoom' : ActorMethod<[bigint], Array<Seat>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isSeatAvailable' : ActorMethod<[bigint, string, string], boolean>,
+  'markAllMessagesAsRead' : ActorMethod<[string], Array<Message>>,
+  'markMessageAsRead' : ActorMethod<[bigint], Message>,
+  'rebookSeat' : ActorMethod<[string, string], BookingResult>,
   'rejectBooking' : ActorMethod<[bigint], Booking>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'sendMessage' : ActorMethod<
+    [bigint, string, string, string, bigint],
+    Message
+  >,
   'updateBookingPayment' : ActorMethod<[bigint, string], Booking>,
   'updateSeatAvailability' : ActorMethod<[bigint, boolean], Seat>,
 }

@@ -5,18 +5,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useActor } from "@/hooks/useActor";
+import {
+  useApproveBooking,
+  useDeleteBooking,
+  useRejectBooking,
+  useSendMessage,
+} from "@/hooks/useQueries";
 import { Link } from "@tanstack/react-router";
 import {
   AlertCircle,
+  Bell,
+  CheckCircle,
   CheckCircle2,
   Clock,
   Home,
   Loader2,
   LogOut,
+  Send,
   ShieldCheck,
+  Trash2,
+  XCircle,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 const ADMIN_USERNAME = "addmin";
 const ADMIN_PASSWORD = "topperslibrary739";
@@ -50,6 +62,76 @@ export function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [bookings, setBookings] = useState<Booking[] | null>(null);
+  const [messageInputs, setMessageInputs] = useState<Record<string, string>>(
+    {},
+  );
+
+  const approveBookingMutation = useApproveBooking();
+  const rejectBookingMutation = useRejectBooking();
+  const deleteBookingMutation = useDeleteBooking();
+  const sendMessageMutation = useSendMessage();
+
+  const refreshBookings = async () => {
+    if (!actor) return;
+    try {
+      const result = await actor.getBookings();
+      setBookings(result as Booking[]);
+    } catch {
+      // silently fail refresh
+    }
+  };
+
+  const handleApprove = async (id: bigint, studentName: string) => {
+    try {
+      await approveBookingMutation.mutateAsync(id);
+      toast.success(`Payment approved for ${studentName}`);
+      await refreshBookings();
+    } catch {
+      toast.error("Failed to approve payment.");
+    }
+  };
+
+  const handleReject = async (id: bigint, studentName: string) => {
+    if (!confirm(`Reject booking for ${studentName}?`)) return;
+    try {
+      await rejectBookingMutation.mutateAsync(id);
+      toast.error(`Booking rejected for ${studentName}.`);
+      await refreshBookings();
+    } catch {
+      toast.error("Failed to reject booking.");
+    }
+  };
+
+  const handleRemove = async (id: bigint, studentName: string) => {
+    if (
+      !confirm(
+        `Remove student "${studentName}" and free their seat? This cannot be undone.`,
+      )
+    )
+      return;
+    try {
+      await deleteBookingMutation.mutateAsync(id);
+      toast.success(`Student removed and seat freed for ${studentName}.`);
+      await refreshBookings();
+    } catch {
+      toast.error("Failed to remove student.");
+    }
+  };
+
+  const handleSendMessage = async (bookingId: bigint, studentName: string) => {
+    const msg = messageInputs[bookingId.toString()] ?? "";
+    if (!msg.trim()) {
+      toast.error("Please type a message before sending.");
+      return;
+    }
+    try {
+      await sendMessageMutation.mutateAsync({ bookingId, content: msg.trim() });
+      toast.success(`Message sent to ${studentName}`);
+      setMessageInputs((prev) => ({ ...prev, [bookingId.toString()]: "" }));
+    } catch {
+      toast.error("Failed to send message.");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,7 +188,7 @@ export function AdminLoginPage() {
                   Admin Portal
                 </h1>
                 <p className="text-gray-300 text-sm mt-0.5">
-                  View all bookings
+                  View &amp; manage all bookings
                 </p>
               </div>
             </div>
@@ -263,10 +345,16 @@ export function AdminLoginPage() {
                         Date
                       </th>
                       <th className="text-left px-4 py-3 font-semibold text-gray-700">
+                        Expiry
+                      </th>
+                      <th className="text-left px-4 py-3 font-semibold text-gray-700">
                         Amount
                       </th>
                       <th className="text-left px-4 py-3 font-semibold text-gray-700">
-                        Payment Status
+                        Status
+                      </th>
+                      <th className="text-left px-4 py-3 font-semibold text-gray-700">
+                        Actions
                       </th>
                     </tr>
                   </thead>
@@ -296,11 +384,98 @@ export function AdminLoginPage() {
                             : "Full Day"}
                         </td>
                         <td className="px-4 py-3">{booking.bookingDate}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">
+                          {booking.expiryDate || "—"}
+                        </td>
                         <td className="px-4 py-3 font-medium">
                           ₹{booking.amount.toString()}
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={booking.paymentStatus} />
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {booking.paymentStatus === "pending" && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={() =>
+                                      handleApprove(
+                                        booking.id,
+                                        booking.studentName,
+                                      )
+                                    }
+                                    disabled={approveBookingMutation.isPending}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 px-2 text-xs"
+                                    data-ocid={`admin_login.booking.approve_button.${idx + 1}`}
+                                  >
+                                    <CheckCircle className="w-3 h-3 mr-1" />{" "}
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() =>
+                                      handleReject(
+                                        booking.id,
+                                        booking.studentName,
+                                      )
+                                    }
+                                    disabled={rejectBookingMutation.isPending}
+                                    className="h-7 px-2 text-xs"
+                                    data-ocid={`admin_login.booking.reject_button.${idx + 1}`}
+                                  >
+                                    <XCircle className="w-3 h-3 mr-1" /> Reject
+                                  </Button>
+                                </>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  handleRemove(booking.id, booking.studentName)
+                                }
+                                disabled={deleteBookingMutation.isPending}
+                                className="h-7 px-2 text-xs border-gray-400 text-gray-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                                data-ocid={`admin_login.booking.delete_button.${idx + 1}`}
+                              >
+                                <Trash2 className="w-3 h-3 mr-1" /> Remove
+                              </Button>
+                            </div>
+                            {/* Send Message — only for pending bookings */}
+                            {booking.paymentStatus === "pending" && (
+                              <div className="flex items-center gap-1 min-w-[220px]">
+                                <Input
+                                  value={
+                                    messageInputs[booking.id.toString()] ?? ""
+                                  }
+                                  onChange={(e) =>
+                                    setMessageInputs((prev) => ({
+                                      ...prev,
+                                      [booking.id.toString()]: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Send message to student…"
+                                  className="h-7 text-xs"
+                                  data-ocid={"admin_login.input"}
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() =>
+                                    handleSendMessage(
+                                      booking.id,
+                                      booking.studentName,
+                                    )
+                                  }
+                                  className="bg-blue-600 hover:bg-blue-700 text-white h-7 px-2 text-xs shrink-0"
+                                  data-ocid={`admin_login.booking.secondary_button.${idx + 1}`}
+                                >
+                                  <Send className="w-3 h-3 mr-1" /> Send
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

@@ -3,6 +3,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import {
   Dialog,
   DialogContent,
   DialogFooter,
@@ -36,12 +41,13 @@ import {
   useBookingsByDate,
   useCancelBooking,
   useCreateRoom,
+  useDeleteBooking,
   useDeleteRoom,
-  useIsAdmin,
   useRejectBooking,
   useRooms,
   useSeats,
   useSeatsByRoom,
+  useSendMessage,
   useUpdateRoom,
 } from "@/hooks/useQueries";
 import {
@@ -54,6 +60,7 @@ import {
   Loader2,
   LogOut,
   Plus,
+  Send,
   ShieldCheck,
   Sofa,
   Trash2,
@@ -65,6 +72,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 
 interface RoomFormState {
@@ -86,20 +94,20 @@ const defaultForm: RoomFormState = {
 function PaymentStatusBadge({ status }: { status: string }) {
   if (status === "approved") {
     return (
-      <Badge className="bg-emerald-900/30 text-emerald-400 border-emerald-700/40 text-xs capitalize font-semibold">
-        ✓ Approved
+      <Badge className="bg-green-100 text-green-700 border-green-300 text-xs capitalize font-semibold">
+        ✓ Confirmed
       </Badge>
     );
   }
   if (status === "rejected") {
     return (
-      <Badge className="bg-red-900/30 text-red-400 border-red-700/40 text-xs capitalize font-semibold">
+      <Badge className="bg-red-100 text-red-700 border-red-300 text-xs capitalize font-semibold">
         ✗ Rejected
       </Badge>
     );
   }
   return (
-    <Badge className="bg-amber-900/30 text-amber-400 border-amber-700/40 text-xs capitalize font-semibold">
+    <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300 text-xs capitalize font-semibold">
       ⏳ Pending
     </Badge>
   );
@@ -227,7 +235,6 @@ function RoomSeatsRow({
 
 // ─── Admin Dashboard (all hooks live here, no early returns before hooks) ────
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
-  const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
   const { data: allBookings, isLoading: bookingsLoading } = useBookings();
   const { data: rooms, isLoading: roomsLoading } = useRooms();
   const { data: seats } = useSeats();
@@ -237,13 +244,18 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const rejectBooking = useRejectBooking();
   const createRoom = useCreateRoom();
   const updateRoom = useUpdateRoom();
+  const deleteBooking = useDeleteBooking();
   const deleteRoom = useDeleteRoom();
+  const sendMessage = useSendMessage();
 
   const [dateFilter, setDateFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [roomFilter, setRoomFilter] = useState("all");
   const [seatsDate, setSeatsDate] = useState("");
   const [seatsSlot, setSeatsSlot] = useState("morning");
+  const [adminMessageInputs, setAdminMessageInputs] = useState<
+    Record<string, string>
+  >({});
 
   const { data: filteredBookings } = useBookingsByDate(dateFilter);
 
@@ -256,9 +268,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const todaysBookings =
     allBookings?.filter((b) => b.bookingDate === today) ?? [];
   const pendingBookings =
-    allBookings?.filter((b) => b.paymentStatus === "pending") ?? [];
+    allBookings?.filter((b) => (b.paymentStatus as string) === "pending") ?? [];
   const approvedBookings =
-    allBookings?.filter((b) => b.paymentStatus === "approved") ?? [];
+    allBookings?.filter((b) => (b.paymentStatus as string) === "approved") ??
+    [];
   const totalRevenue = approvedBookings.reduce(
     (sum, b) => sum + Number(b.amount),
     0,
@@ -269,6 +282,40 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const monthlyRevenue = approvedBookings
     .filter((b) => b.bookingDuration === "monthly")
     .reduce((sum, b) => sum + Number(b.amount), 0);
+
+  // Weekly revenue
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weeklyRevenue = approvedBookings
+    .filter((b) => new Date(b.bookingDate) >= weekAgo)
+    .reduce((sum, b) => sum + Number(b.amount), 0);
+
+  // Monthly revenue (current calendar month)
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const thisMonthRevenue = approvedBookings
+    .filter((b) => b.bookingDate.startsWith(thisMonth))
+    .reduce((sum, b) => sum + Number(b.amount), 0);
+
+  // Booked seats count
+  const bookedSeatsCount = approvedBookings.length;
+
+  // Daily data for last 14 days
+  const last14Days = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (13 - i));
+    const dateStr = d.toISOString().split("T")[0];
+    const label = d.toLocaleDateString("en-IN", {
+      month: "short",
+      day: "numeric",
+    });
+    const dayBookings = (allBookings ?? []).filter(
+      (b) => b.bookingDate === dateStr,
+    );
+    const dayRevenue = dayBookings
+      .filter((b) => (b.paymentStatus as string) === "approved")
+      .reduce((sum, b) => sum + Number(b.amount), 0);
+    return { date: label, bookings: dayBookings.length, revenue: dayRevenue };
+  });
 
   let displayBookings = dateFilter
     ? (filteredBookings ?? [])
@@ -285,7 +332,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   }
 
   const filteredRevenue = displayBookings
-    .filter((b) => b.paymentStatus === "approved")
+    .filter((b) => (b.paymentStatus as string) === "approved")
     .reduce((sum, b) => sum + Number(b.amount), 0);
 
   const recentBookings = [...(allBookings ?? [])]
@@ -362,55 +409,60 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     }
   };
 
-  const handleApproveBooking = async (id: bigint) => {
+  const handleApproveBooking = async (id: bigint, studentName: string) => {
     try {
       await approveBooking.mutateAsync(id);
-      toast.success("Payment approved. Booking confirmed!");
+      toast.success(`Booking confirmed for ${studentName}!`);
     } catch {
       toast.error("Failed to approve booking.");
     }
   };
 
-  const handleRejectBooking = async (id: bigint) => {
-    if (!confirm("Reject this booking?")) return;
+  const handleDeleteBooking = async (id: bigint, studentName: string) => {
+    if (
+      !confirm(
+        `Remove student "${studentName}" and free their seat? This cannot be undone.`,
+      )
+    )
+      return;
+    try {
+      await deleteBooking.mutateAsync(id);
+      toast.success(`Student removed and seat freed for ${studentName}.`);
+    } catch {
+      toast.error("Failed to remove student.");
+    }
+  };
+
+  const handleRejectBooking = async (id: bigint, studentName: string) => {
+    if (!confirm(`Reject booking for ${studentName}?`)) return;
     try {
       await rejectBooking.mutateAsync(id);
-      toast.success("Booking rejected.");
+      toast.success(`Booking rejected for ${studentName}.`);
     } catch {
       toast.error("Failed to reject booking.");
     }
   };
 
-  if (adminLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-10 h-10 animate-spin text-primary" />
-          <p className="text-muted-foreground text-sm">
-            Verifying admin access…
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center max-w-xs">
-          <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-            <ShieldCheck className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <h2 className="font-display text-2xl font-bold text-foreground mb-2">
-            Admin Access Required
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            You must be signed in as an admin to view this page.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const handleSendAdminMessage = async (
+    bookingId: bigint,
+    studentName: string,
+  ) => {
+    const msg = adminMessageInputs[bookingId.toString()] ?? "";
+    if (!msg.trim()) {
+      toast.error("Please type a message before sending.");
+      return;
+    }
+    try {
+      await sendMessage.mutateAsync({ bookingId, content: msg.trim() });
+      toast.success(`Message sent to ${studentName}`);
+      setAdminMessageInputs((prev) => ({
+        ...prev,
+        [bookingId.toString()]: "",
+      }));
+    } catch {
+      toast.error("Failed to send message.");
+    }
+  };
 
   return (
     <main className="min-h-screen bg-background">
@@ -529,6 +581,84 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 accent="bg-sky-500"
                 ocid="admin.stats.seats.card"
               />
+              <StatCard
+                title="This Week"
+                value={`₹${weeklyRevenue.toLocaleString("en-IN")}`}
+                icon={IndianRupee}
+                accent="bg-violet-500"
+                ocid="admin.stats.weekly_revenue.card"
+              />
+              <StatCard
+                title="This Month"
+                value={`₹${thisMonthRevenue.toLocaleString("en-IN")}`}
+                icon={IndianRupee}
+                accent="bg-rose-500"
+                ocid="admin.stats.monthly_revenue.card"
+              />
+              <StatCard
+                title="Seats Booked"
+                value={bookedSeatsCount}
+                icon={Users}
+                accent="bg-teal-500"
+                ocid="admin.stats.booked_seats.card"
+              />
+            </div>
+
+            <div className="bg-card rounded-xl border border-border shadow-navy-sm overflow-hidden mb-6">
+              <div className="p-5 border-b border-border">
+                <h2 className="font-display text-lg font-semibold">
+                  Daily Usage — Last 14 Days
+                </h2>
+                <p className="text-muted-foreground text-sm mt-0.5">
+                  Bookings and revenue by day
+                </p>
+              </div>
+              <div className="p-5">
+                <ChartContainer
+                  config={{
+                    bookings: { label: "Bookings", color: "#1a1a1a" },
+                    revenue: { label: "Revenue (₹)", color: "#10b981" },
+                  }}
+                  className="h-52 w-full"
+                >
+                  <BarChart
+                    data={last14Days}
+                    margin={{ top: 4, right: 8, left: 0, bottom: 4 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar
+                      dataKey="bookings"
+                      name="Bookings"
+                      fill="#1a1a1a"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="revenue"
+                      name="Revenue (₹)"
+                      fill="#10b981"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ChartContainer>
+                {last14Days.every((d) => d.bookings === 0) && (
+                  <p className="text-center text-sm text-muted-foreground mt-2">
+                    No bookings in the last 14 days — chart will populate as
+                    bookings come in
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="bg-card rounded-xl border border-border shadow-navy-sm overflow-hidden">
@@ -587,11 +717,16 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                             ₹{booking.amount.toString()}
                           </span>
                           <PaymentStatusBadge status={booking.paymentStatus} />
-                          {booking.paymentStatus === "pending" && (
+                          {(booking.paymentStatus as string) === "pending" && (
                             <div className="flex gap-1">
                               <Button
                                 size="sm"
-                                onClick={() => handleApproveBooking(booking.id)}
+                                onClick={() =>
+                                  handleApproveBooking(
+                                    booking.id,
+                                    booking.studentName,
+                                  )
+                                }
                                 disabled={approveBooking.isPending}
                                 className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 px-2 text-xs"
                                 data-ocid={`admin.booking.approve_button.${i + 1}`}
@@ -601,7 +736,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                               <Button
                                 size="sm"
                                 variant="destructive"
-                                onClick={() => handleRejectBooking(booking.id)}
+                                onClick={() =>
+                                  handleRejectBooking(
+                                    booking.id,
+                                    booking.studentName,
+                                  )
+                                }
                                 disabled={rejectBooking.isPending}
                                 className="h-7 px-2 text-xs"
                                 data-ocid={`admin.booking.reject_button.${i + 1}`}
@@ -610,7 +750,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                               </Button>
                             </div>
                           )}
-                          {booking.paymentStatus === "approved" && (
+                          {(booking.paymentStatus as string) === "approved" && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -621,6 +761,51 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                             >
                               Cancel
                             </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              handleDeleteBooking(
+                                booking.id,
+                                booking.studentName,
+                              )
+                            }
+                            disabled={deleteBooking.isPending}
+                            className="h-7 px-2 text-xs border-gray-400 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                            data-ocid={`admin.booking.delete_button.${i + 1}`}
+                          >
+                            Remove
+                          </Button>
+                          {(booking.paymentStatus as string) === "pending" && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Input
+                                value={
+                                  adminMessageInputs[booking.id.toString()] ??
+                                  ""
+                                }
+                                onChange={(e) =>
+                                  setAdminMessageInputs((prev) => ({
+                                    ...prev,
+                                    [booking.id.toString()]: e.target.value,
+                                  }))
+                                }
+                                placeholder="Send message to student…"
+                                className="h-7 text-xs"
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() =>
+                                  handleSendAdminMessage(
+                                    booking.id,
+                                    booking.studentName,
+                                  )
+                                }
+                                className="bg-blue-600 hover:bg-blue-700 text-white h-7 px-2 text-xs shrink-0"
+                              >
+                                <Send className="w-3 h-3 mr-1" /> Send
+                              </Button>
+                            </div>
                           )}
                         </div>
                       </motion.div>
@@ -717,7 +902,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   <p className="text-xl font-bold text-amber-600 font-display">
                     {
                       displayBookings.filter(
-                        (b) => b.paymentStatus === "pending",
+                        (b) => (b.paymentStatus as string) === "pending",
                       ).length
                     }
                   </p>
@@ -758,6 +943,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                           Date
                         </TableHead>
                         <TableHead className="whitespace-nowrap">
+                          Expiry
+                        </TableHead>
+                        <TableHead className="whitespace-nowrap">
                           Slot
                         </TableHead>
                         <TableHead className="whitespace-nowrap">
@@ -781,7 +969,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       {displayBookings.length === 0 ? (
                         <TableRow>
                           <TableCell
-                            colSpan={11}
+                            colSpan={12}
                             className="text-center text-muted-foreground py-12"
                             data-ocid="admin.bookings.empty_state"
                           >
@@ -815,6 +1003,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                               <TableCell className="text-sm whitespace-nowrap">
                                 {booking.bookingDate}
                               </TableCell>
+                              <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                                {booking.expiryDate || "—"}
+                              </TableCell>
                               <TableCell>
                                 <SlotBadge slot={booking.timeSlot} />
                               </TableCell>
@@ -834,7 +1025,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                               <TableCell>
                                 <Badge
                                   variant={
-                                    booking.status === "active"
+                                    (booking.status as string) === "active"
                                       ? "default"
                                       : "secondary"
                                   }
@@ -845,12 +1036,16 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-1">
-                                  {booking.paymentStatus === "pending" && (
+                                  {(booking.paymentStatus as string) ===
+                                    "pending" && (
                                     <>
                                       <Button
                                         size="sm"
                                         onClick={() =>
-                                          handleApproveBooking(booking.id)
+                                          handleApproveBooking(
+                                            booking.id,
+                                            booking.studentName,
+                                          )
                                         }
                                         disabled={approveBooking.isPending}
                                         className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 px-2 text-xs"
@@ -863,7 +1058,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                         size="sm"
                                         variant="destructive"
                                         onClick={() =>
-                                          handleRejectBooking(booking.id)
+                                          handleRejectBooking(
+                                            booking.id,
+                                            booking.studentName,
+                                          )
                                         }
                                         disabled={rejectBooking.isPending}
                                         className="h-7 px-2 text-xs"
@@ -874,7 +1072,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                       </Button>
                                     </>
                                   )}
-                                  {booking.paymentStatus === "approved" && (
+                                  {(booking.paymentStatus as string) ===
+                                    "approved" && (
                                     <Button
                                       size="sm"
                                       variant="outline"
@@ -887,6 +1086,54 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                                     >
                                       Cancel
                                     </Button>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      handleDeleteBooking(
+                                        booking.id,
+                                        booking.studentName,
+                                      )
+                                    }
+                                    disabled={deleteBooking.isPending}
+                                    className="h-7 px-2 text-xs border-gray-400 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                    data-ocid={`admin.booking.delete_button.${i + 1}`}
+                                  >
+                                    Remove
+                                  </Button>
+                                  {(booking.paymentStatus as string) ===
+                                    "pending" && (
+                                    <div className="flex items-center gap-1 mt-1">
+                                      <Input
+                                        value={
+                                          adminMessageInputs[
+                                            booking.id.toString()
+                                          ] ?? ""
+                                        }
+                                        onChange={(e) =>
+                                          setAdminMessageInputs((prev) => ({
+                                            ...prev,
+                                            [booking.id.toString()]:
+                                              e.target.value,
+                                          }))
+                                        }
+                                        placeholder="Send message…"
+                                        className="h-7 text-xs"
+                                      />
+                                      <Button
+                                        size="sm"
+                                        onClick={() =>
+                                          handleSendAdminMessage(
+                                            booking.id,
+                                            booking.studentName,
+                                          )
+                                        }
+                                        className="bg-blue-600 hover:bg-blue-700 text-white h-7 px-2 text-xs shrink-0"
+                                      >
+                                        <Send className="w-3 h-3 mr-1" /> Send
+                                      </Button>
+                                    </div>
                                   )}
                                 </div>
                               </TableCell>
@@ -1216,8 +1463,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-bold text-red-500 font-display">
-                    {allBookings?.filter((b) => b.paymentStatus === "rejected")
-                      .length ?? 0}
+                    {allBookings?.filter(
+                      (b) => (b.paymentStatus as string) === "rejected",
+                    ).length ?? 0}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     rejected payments

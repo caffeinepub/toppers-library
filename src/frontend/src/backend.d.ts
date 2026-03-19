@@ -7,19 +7,18 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export interface Booking {
+export interface Seat {
     id: bigint;
-    status: string;
-    paymentStatus: string;
-    studentName: string;
-    upiTransactionId: string;
-    seatId: bigint;
-    bookingDuration: string;
-    bookingDate: string;
-    studentContact: string;
+    isAvailable: boolean;
     roomId: bigint;
-    amount: bigint;
-    timeSlot: string;
+    seatType: string;
+    seatNumber: string;
+}
+export interface Message {
+    id: bigint;
+    content: string;
+    bookingId: bigint;
+    timestamp: bigint;
 }
 export interface Room {
     id: bigint;
@@ -34,40 +33,48 @@ export interface BookingResult {
     bookingId: bigint;
     password: string;
 }
-export interface Seat {
+export interface Booking {
     id: bigint;
-    isAvailable: boolean;
+    status: string;
+    paymentStatus: string;
+    studentName: string;
+    expiryDate: string;
+    upiTransactionId: string;
+    seatId: bigint;
+    bookingDuration: string;
+    bookingDate: string;
+    studentContact: string;
     roomId: bigint;
-    seatType: string;
-    seatNumber: string;
+    amount: bigint;
+    timeSlot: string;
 }
 export interface UserProfile {
     name: string;
 }
-export enum UserRole {
-    admin = "admin",
-    user = "user",
-    guest = "guest"
-}
 export interface backendInterface {
+    _initialize(): Promise<void>;
     approveBooking(id: bigint): Promise<Booking>;
-    assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     cancelBooking(id: bigint): Promise<Booking>;
-    createBooking(seatId: bigint, studentName: string, studentContact: string, bookingDate: string, timeSlot: string, bookingDuration: string, upiTransactionId: string, amount: bigint): Promise<BookingResult>;
+    createBooking(seatId: bigint, studentName: string, studentContact: string, bookingDate: string, expiryDate: string, timeSlot: string, bookingDuration: string, upiTransactionId: string, amount: bigint): Promise<BookingResult>;
+    deleteBooking(id: bigint): Promise<boolean>;
+    expireOldBookings(currentDate: string): Promise<bigint>;
     getBookedSeatIds(date: string, timeSlot: string): Promise<Array<bigint>>;
+    getBookedSeatIdsByRoom(roomId: bigint): Promise<Array<bigint>>;
     getBookingByCredentials(studentId: string, password: string): Promise<Booking | null>;
     getBookings(): Promise<Array<Booking>>;
     getBookingsByDate(date: string): Promise<Array<Booking>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
-    getCallerUserRole(): Promise<UserRole>;
+    getMessageByCredentials(studentId: string, password: string): Promise<Message | null>;
+    getMessagesByBooking(bookingId: bigint): Promise<Array<Message>>;
     getRooms(): Promise<Array<Room>>;
     getSeat(id: bigint): Promise<Seat>;
     getSeatsByRoom(roomId: bigint): Promise<Array<Seat>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
-    isCallerAdmin(): Promise<boolean>;
     isSeatAvailable(seatId: bigint, date: string, timeSlot: string): Promise<boolean>;
+    rebookSeat(studentId: string, password: string, newBookingDate: string, newExpiryDate: string, newUpiTransactionId: string): Promise<BookingResult>;
     rejectBooking(id: bigint): Promise<Booking>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    sendMessage(bookingId: bigint, content: string, timestamp: bigint): Promise<Message>;
     updateBookingPayment(id: bigint, upiTransactionId: string): Promise<Booking>;
     updateSeatAvailability(id: bigint, isAvailable: boolean): Promise<Seat>;
 }

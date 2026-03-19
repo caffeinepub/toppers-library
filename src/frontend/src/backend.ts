@@ -89,19 +89,21 @@ export class ExternalBlob {
         return this;
     }
 }
-export interface Booking {
+export interface Seat {
     id: bigint;
-    status: string;
-    paymentStatus: string;
-    studentName: string;
-    upiTransactionId: string;
-    seatId: bigint;
-    bookingDuration: string;
-    bookingDate: string;
-    studentContact: string;
+    isAvailable: boolean;
     roomId: bigint;
-    amount: bigint;
-    timeSlot: string;
+    seatType: string;
+    seatNumber: string;
+}
+export interface Message {
+    id: bigint;
+    status: MessageStatus;
+    content: string;
+    bookingId: bigint;
+    recipient: string;
+    sender: string;
+    timestamp: bigint;
 }
 export interface Room {
     id: bigint;
@@ -116,15 +118,39 @@ export interface BookingResult {
     bookingId: bigint;
     password: string;
 }
-export interface Seat {
+export interface Booking {
     id: bigint;
-    isAvailable: boolean;
+    status: BookingStatus;
+    paymentStatus: PaymentStatus;
+    studentName: string;
+    expiryDate: string;
+    upiTransactionId: string;
+    seatId: bigint;
+    bookingDuration: string;
+    bookingDate: string;
+    studentContact: string;
     roomId: bigint;
-    seatType: string;
-    seatNumber: string;
+    amount: bigint;
+    timeSlot: string;
 }
 export interface UserProfile {
     name: string;
+}
+export enum BookingStatus {
+    cancelled = "cancelled",
+    expired = "expired",
+    pending = "pending",
+    approved = "approved",
+    rejected = "rejected"
+}
+export enum MessageStatus {
+    read = "read",
+    unread = "unread"
+}
+export enum PaymentStatus {
+    submitted = "submitted",
+    pending = "pending",
+    paid = "paid"
 }
 export enum UserRole {
     admin = "admin",
@@ -137,25 +163,33 @@ export interface backendInterface {
     approveBooking(id: bigint): Promise<Booking>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     cancelBooking(id: bigint): Promise<Booking>;
-    createBooking(seatId: bigint, studentName: string, studentContact: string, bookingDate: string, timeSlot: string, bookingDuration: string, upiTransactionId: string, amount: bigint): Promise<BookingResult>;
+    checkAndUpdateBookingExpired(bookingId: bigint, currentDate: string): Promise<boolean>;
+    createBooking(seatId: bigint, studentName: string, studentContact: string, bookingDate: string, expiryDate: string, timeSlot: string, bookingDuration: string, upiTransactionId: string, amount: bigint): Promise<BookingResult>;
+    deleteBooking(id: bigint): Promise<boolean>;
     getBookedSeatIds(date: string, timeSlot: string): Promise<Array<bigint>>;
     getBookingByCredentials(studentId: string, password: string): Promise<Booking | null>;
     getBookings(): Promise<Array<Booking>>;
     getBookingsByDate(date: string): Promise<Array<Booking>>;
+    getBookingsByStudent(studentId: string): Promise<Array<Booking>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
+    getMessagesByBooking(bookingId: bigint): Promise<Array<Message>>;
     getRooms(): Promise<Array<Room>>;
     getSeat(id: bigint): Promise<Seat>;
     getSeatsByRoom(roomId: bigint): Promise<Array<Seat>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     isSeatAvailable(seatId: bigint, date: string, timeSlot: string): Promise<boolean>;
+    markAllMessagesAsRead(studentId: string): Promise<Array<Message>>;
+    markMessageAsRead(messageId: bigint): Promise<Message>;
+    rebookSeat(studentId: string, password: string): Promise<BookingResult>;
     rejectBooking(id: bigint): Promise<Booking>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    sendMessage(bookingId: bigint, sender: string, recipient: string, content: string, timestamp: bigint): Promise<Message>;
     updateBookingPayment(id: bigint, upiTransactionId: string): Promise<Booking>;
     updateSeatAvailability(id: bigint, isAvailable: boolean): Promise<Seat>;
 }
-import type { Booking as _Booking, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { Booking as _Booking, BookingStatus as _BookingStatus, Message as _Message, MessageStatus as _MessageStatus, PaymentStatus as _PaymentStatus, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initialize(): Promise<void> {
@@ -190,27 +224,27 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.approveBooking(arg0);
-                return result;
+                return from_candid_Booking_n1(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.approveBooking(arg0);
-            return result;
+            return from_candid_Booking_n1(this._uploadFile, this._downloadFile, result);
         }
     }
     async assignCallerUserRole(arg0: Principal, arg1: UserRole): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n1(this._uploadFile, this._downloadFile, arg1));
+                const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n7(this._uploadFile, this._downloadFile, arg1));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n1(this._uploadFile, this._downloadFile, arg1));
+            const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n7(this._uploadFile, this._downloadFile, arg1));
             return result;
         }
     }
@@ -218,27 +252,55 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.cancelBooking(arg0);
-                return result;
+                return from_candid_Booking_n1(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.cancelBooking(arg0);
-            return result;
+            return from_candid_Booking_n1(this._uploadFile, this._downloadFile, result);
         }
     }
-    async createBooking(arg0: bigint, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: bigint): Promise<BookingResult> {
+    async checkAndUpdateBookingExpired(arg0: bigint, arg1: string): Promise<boolean> {
         if (this.processError) {
             try {
-                const result = await this.actor.createBooking(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                const result = await this.actor.checkAndUpdateBookingExpired(arg0, arg1);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.createBooking(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            const result = await this.actor.checkAndUpdateBookingExpired(arg0, arg1);
+            return result;
+        }
+    }
+    async createBooking(arg0: bigint, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: string, arg8: bigint): Promise<BookingResult> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createBooking(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createBooking(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+            return result;
+        }
+    }
+    async deleteBooking(arg0: bigint): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteBooking(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteBooking(arg0);
             return result;
         }
     }
@@ -260,70 +322,98 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getBookingByCredentials(arg0, arg1);
-                return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n9(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getBookingByCredentials(arg0, arg1);
-            return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n9(this._uploadFile, this._downloadFile, result);
         }
     }
     async getBookings(): Promise<Array<Booking>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getBookings();
-                return result;
+                return from_candid_vec_n10(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getBookings();
-            return result;
+            return from_candid_vec_n10(this._uploadFile, this._downloadFile, result);
         }
     }
     async getBookingsByDate(arg0: string): Promise<Array<Booking>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getBookingsByDate(arg0);
-                return result;
+                return from_candid_vec_n10(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getBookingsByDate(arg0);
-            return result;
+            return from_candid_vec_n10(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getBookingsByStudent(arg0: string): Promise<Array<Booking>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getBookingsByStudent(arg0);
+                return from_candid_vec_n10(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getBookingsByStudent(arg0);
+            return from_candid_vec_n10(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserProfile(): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n4(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n11(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n4(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n11(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserRole(): Promise<UserRole> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n5(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole_n12(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n5(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserRole_n12(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getMessagesByBooking(arg0: bigint): Promise<Array<Message>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getMessagesByBooking(arg0);
+                return from_candid_vec_n14(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getMessagesByBooking(arg0);
+            return from_candid_vec_n14(this._uploadFile, this._downloadFile, result);
         }
     }
     async getRooms(): Promise<Array<Room>> {
@@ -372,14 +462,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n4(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n11(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n4(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n11(this._uploadFile, this._downloadFile, result);
         }
     }
     async isCallerAdmin(): Promise<boolean> {
@@ -410,18 +500,60 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async rejectBooking(arg0: bigint): Promise<Booking> {
+    async markAllMessagesAsRead(arg0: string): Promise<Array<Message>> {
         if (this.processError) {
             try {
-                const result = await this.actor.rejectBooking(arg0);
+                const result = await this.actor.markAllMessagesAsRead(arg0);
+                return from_candid_vec_n14(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.markAllMessagesAsRead(arg0);
+            return from_candid_vec_n14(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async markMessageAsRead(arg0: bigint): Promise<Message> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.markMessageAsRead(arg0);
+                return from_candid_Message_n15(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.markMessageAsRead(arg0);
+            return from_candid_Message_n15(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async rebookSeat(arg0: string, arg1: string): Promise<BookingResult> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.rebookSeat(arg0, arg1);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.rejectBooking(arg0);
+            const result = await this.actor.rebookSeat(arg0, arg1);
             return result;
+        }
+    }
+    async rejectBooking(arg0: bigint): Promise<Booking> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.rejectBooking(arg0);
+                return from_candid_Booking_n1(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.rejectBooking(arg0);
+            return from_candid_Booking_n1(this._uploadFile, this._downloadFile, result);
         }
     }
     async saveCallerUserProfile(arg0: UserProfile): Promise<void> {
@@ -438,18 +570,32 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async sendMessage(arg0: bigint, arg1: string, arg2: string, arg3: string, arg4: bigint): Promise<Message> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.sendMessage(arg0, arg1, arg2, arg3, arg4);
+                return from_candid_Message_n15(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.sendMessage(arg0, arg1, arg2, arg3, arg4);
+            return from_candid_Message_n15(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async updateBookingPayment(arg0: bigint, arg1: string): Promise<Booking> {
         if (this.processError) {
             try {
                 const result = await this.actor.updateBookingPayment(arg0, arg1);
-                return result;
+                return from_candid_Booking_n1(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.updateBookingPayment(arg0, arg1);
-            return result;
+            return from_candid_Booking_n1(this._uploadFile, this._downloadFile, result);
         }
     }
     async updateSeatAvailability(arg0: bigint, arg1: boolean): Promise<Seat> {
@@ -467,16 +613,103 @@ export class Backend implements backendInterface {
         }
     }
 }
-function from_candid_UserRole_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+function from_candid_BookingStatus_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _BookingStatus): BookingStatus {
+    return from_candid_variant_n4(_uploadFile, _downloadFile, value);
+}
+function from_candid_Booking_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Booking): Booking {
+    return from_candid_record_n2(_uploadFile, _downloadFile, value);
+}
+function from_candid_MessageStatus_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _MessageStatus): MessageStatus {
+    return from_candid_variant_n18(_uploadFile, _downloadFile, value);
+}
+function from_candid_Message_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Message): Message {
+    return from_candid_record_n16(_uploadFile, _downloadFile, value);
+}
+function from_candid_PaymentStatus_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PaymentStatus): PaymentStatus {
     return from_candid_variant_n6(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Booking]): Booking | null {
+function from_candid_UserRole_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n13(_uploadFile, _downloadFile, value);
+}
+function from_candid_opt_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
-    return value.length === 0 ? null : value[0];
+function from_candid_opt_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Booking]): Booking | null {
+    return value.length === 0 ? null : from_candid_Booking_n1(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_variant_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    id: bigint;
+    status: _MessageStatus;
+    content: string;
+    bookingId: bigint;
+    recipient: string;
+    sender: string;
+    timestamp: bigint;
+}): {
+    id: bigint;
+    status: MessageStatus;
+    content: string;
+    bookingId: bigint;
+    recipient: string;
+    sender: string;
+    timestamp: bigint;
+} {
+    return {
+        id: value.id,
+        status: from_candid_MessageStatus_n17(_uploadFile, _downloadFile, value.status),
+        content: value.content,
+        bookingId: value.bookingId,
+        recipient: value.recipient,
+        sender: value.sender,
+        timestamp: value.timestamp
+    };
+}
+function from_candid_record_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    id: bigint;
+    status: _BookingStatus;
+    paymentStatus: _PaymentStatus;
+    studentName: string;
+    expiryDate: string;
+    upiTransactionId: string;
+    seatId: bigint;
+    bookingDuration: string;
+    bookingDate: string;
+    studentContact: string;
+    roomId: bigint;
+    amount: bigint;
+    timeSlot: string;
+}): {
+    id: bigint;
+    status: BookingStatus;
+    paymentStatus: PaymentStatus;
+    studentName: string;
+    expiryDate: string;
+    upiTransactionId: string;
+    seatId: bigint;
+    bookingDuration: string;
+    bookingDate: string;
+    studentContact: string;
+    roomId: bigint;
+    amount: bigint;
+    timeSlot: string;
+} {
+    return {
+        id: value.id,
+        status: from_candid_BookingStatus_n3(_uploadFile, _downloadFile, value.status),
+        paymentStatus: from_candid_PaymentStatus_n5(_uploadFile, _downloadFile, value.paymentStatus),
+        studentName: value.studentName,
+        expiryDate: value.expiryDate,
+        upiTransactionId: value.upiTransactionId,
+        seatId: value.seatId,
+        bookingDuration: value.bookingDuration,
+        bookingDate: value.bookingDate,
+        studentContact: value.studentContact,
+        roomId: value.roomId,
+        amount: value.amount,
+        timeSlot: value.timeSlot
+    };
+}
+function from_candid_variant_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
     user: null;
@@ -485,10 +718,45 @@ function from_candid_variant_n6(_uploadFile: (file: ExternalBlob) => Promise<Uin
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
-function to_candid_UserRole_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
-    return to_candid_variant_n2(_uploadFile, _downloadFile, value);
+function from_candid_variant_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    read: null;
+} | {
+    unread: null;
+}): MessageStatus {
+    return "read" in value ? MessageStatus.read : "unread" in value ? MessageStatus.unread : value;
 }
-function to_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
+function from_candid_variant_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    cancelled: null;
+} | {
+    expired: null;
+} | {
+    pending: null;
+} | {
+    approved: null;
+} | {
+    rejected: null;
+}): BookingStatus {
+    return "cancelled" in value ? BookingStatus.cancelled : "expired" in value ? BookingStatus.expired : "pending" in value ? BookingStatus.pending : "approved" in value ? BookingStatus.approved : "rejected" in value ? BookingStatus.rejected : value;
+}
+function from_candid_variant_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    submitted: null;
+} | {
+    pending: null;
+} | {
+    paid: null;
+}): PaymentStatus {
+    return "submitted" in value ? PaymentStatus.submitted : "pending" in value ? PaymentStatus.pending : "paid" in value ? PaymentStatus.paid : value;
+}
+function from_candid_vec_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Booking>): Array<Booking> {
+    return value.map((x)=>from_candid_Booking_n1(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Message>): Array<Message> {
+    return value.map((x)=>from_candid_Message_n15(_uploadFile, _downloadFile, x));
+}
+function to_candid_UserRole_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
+    return to_candid_variant_n8(_uploadFile, _downloadFile, value);
+}
+function to_candid_variant_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
     admin: null;
 } | {
     user: null;
