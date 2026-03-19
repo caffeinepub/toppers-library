@@ -2,6 +2,7 @@ import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { Toaster } from "@/components/ui/sonner";
 import { useInitialize } from "@/hooks/useQueries";
+import { AdminLoginPage } from "@/pages/AdminLoginPage";
 import { AdminPage } from "@/pages/AdminPage";
 import { HomePage } from "@/pages/HomePage";
 import { RoomsPage } from "@/pages/RoomsPage";
@@ -69,12 +70,19 @@ const studentLoginRoute = createRoute({
   component: StudentLoginPage,
 });
 
+const adminLoginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin-login",
+  component: AdminLoginPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   roomsRoute,
   seatBookingRoute,
   adminRoute,
   studentLoginRoute,
+  adminLoginRoute,
 ]);
 
 const router = createRouter({ routeTree });

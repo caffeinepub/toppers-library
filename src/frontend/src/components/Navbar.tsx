@@ -20,6 +20,11 @@ export function Navbar() {
       label: "Student Login",
       ocid: "nav.student_login_link",
     },
+    {
+      to: "/admin-login",
+      label: "Admin Login",
+      ocid: "nav.admin_login_link",
+    },
   ];
 
   return (
@@ -49,6 +54,10 @@ export function Navbar() {
               {link.label === "Student Login" ? (
                 <span className="flex items-center gap-1.5">
                   <GraduationCap className="w-4 h-4" /> {link.label}
+                </span>
+              ) : link.label === "Admin Login" ? (
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4" /> {link.label}
                 </span>
               ) : (
                 link.label
@@ -120,7 +129,17 @@ export function Navbar() {
               className="px-3 py-2 text-sm font-medium text-navy-100 rounded-md hover:bg-navy-700"
               onClick={() => setMobileOpen(false)}
             >
-              {link.label}
+              {link.label === "Student Login" ? (
+                <span className="flex items-center gap-1.5">
+                  <GraduationCap className="w-4 h-4" /> {link.label}
+                </span>
+              ) : link.label === "Admin Login" ? (
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4" /> {link.label}
+                </span>
+              ) : (
+                link.label
+              )}
             </Link>
           ))}
           {isAdmin && (

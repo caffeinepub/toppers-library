@@ -1,35 +1,25 @@
 # Toppers Library
 
 ## Current State
-- Seat booking app with Hall A (60 seats) and Hall B (20 seats)
-- Monthly booking only: half day (₹600) or full day (₹1200)
-- Payment via UPI QR code; admin manually approves bookings
-- Admin dashboard at /admin with no login protection
-- No student login or credential system
+- StudentLoginPage at /student-login: login form (Student ID + password), fetches booking by credentials, shows booking details.
+- AdminPage at /admin: full 5-tab dashboard with its own login.
+- Navbar has a Student Login link. No public Admin Login link.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Admin login screen at /admin: username "addmin", password "topperslibrary739" (stored in frontend, no backend auth needed)
-- Student credentials generated at booking creation: random Student ID (e.g. TL-XXXX) and random password
-- Display credentials to student after payment step is submitted
-- Student login page at /student-login where students enter their ID + password to view their booking details
-- Backend: StudentCredential type {bookingId, studentId, password}; stored in a map keyed by bookingId
-- Backend: createBooking now returns {bookingId, studentId, password}
-- Backend: getBookingByCredentials(studentId, password) returns the booking if credentials match
+- New /admin-login route with AdminLoginPage component.
+- AdminLoginPage: same form/card style as StudentLoginPage. Username + password fields. Credentials validated client-side: addmin / topperslibrary739. On success, shows All Bookings view with every booking from the backend.
+- Admin Login button in Navbar, styled same as Student Login (ShieldCheck icon + label).
 
 ### Modify
-- createBooking return type changes from Nat to record {bookingId: Nat; studentId: Text; password: Text}
-- After payment submission in SeatBookingPage, show a credential card with the student's ID and password
-- Admin page shows login form before dashboard; session stored in localStorage
+- Navbar: add Admin Login link (with ShieldCheck icon), styled identically to Student Login link.
+- App.tsx: add adminLoginRoute for /admin-login.
 
 ### Remove
-- Nothing removed
+- Nothing.
 
 ## Implementation Plan
-1. Update backend: add StudentCredential type, credentials map, credential generation in createBooking (return record), getBookingByCredentials query
-2. Regenerate backend bindings
-3. Update AdminPage: add login gate (username/password check in frontend, stored in localStorage)
-4. Update SeatBookingPage: handle new createBooking return type, show credentials after payment step
-5. Add StudentLoginPage at /student-login: form to enter studentId + password, show booking details on success
-6. Add route for /student-login in App.tsx
+1. Create src/frontend/src/pages/AdminLoginPage.tsx with login form and all-bookings view after auth.
+2. Add /admin-login route to App.tsx.
+3. Add Admin Login link to Navbar navLinks array.
