@@ -1,3 +1,4 @@
+import { BookingStatus } from "@/backend";
 import { useActor } from "@/hooks/useActor";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
@@ -14,7 +15,6 @@ export function useRooms() {
   });
 }
 
-// Gets all seats across all rooms by fetching per-room
 export function useSeats() {
   const { actor, isFetching } = useActor();
   const { data: rooms } = useRooms();
@@ -79,28 +79,53 @@ export function useBookedSeatIds(date: string, timeSlot: string) {
   });
 }
 
-// getBookedSeatIdsByRoom is not in the generated backend.ts interface — use as any
+// Derive booked seat IDs from all bookings filtered by roomId
 export function useBookedSeatIdsByRoom(roomId: bigint) {
   const { actor, isFetching } = useActor();
   return useQuery({
     queryKey: ["bookedSeatIdsByRoom", roomId.toString()],
     queryFn: async () => {
       if (!actor) return [];
-      return (actor as any).getBookedSeatIdsByRoom(roomId) as Promise<bigint[]>;
+      const allBookings = await actor.getBookings();
+      return allBookings
+        .filter(
+          (b) =>
+            b.roomId === roomId &&
+            (b.status === BookingStatus.pending ||
+              b.status === BookingStatus.approved),
+        )
+        .map((b) => b.seatId);
     },
     enabled: !!actor && !isFetching,
   });
 }
 
-// Calls _initialize() and expireOldBookings() on startup
+// Initialize on startup and check expired bookings per-booking
 export function useInitialize() {
   const { actor, isFetching } = useActor();
   useEffect(() => {
     if (actor && !isFetching) {
-      const todayStr = new Date().toISOString().split("T")[0];
       actor._initialize().catch(() => {});
-      // expireOldBookings is not in the generated interface — use as any
-      (actor as any).expireOldBookings(todayStr).catch(() => {});
+      // Check each approved booking for expiry
+      const todayStr = new Date().toISOString().split("T")[0];
+      (async () => {
+        try {
+          const bookings = await actor.getBookings();
+          const expired = bookings.filter(
+            (b) =>
+              b.status === BookingStatus.approved &&
+              b.expiryDate !== "" &&
+              b.expiryDate < todayStr,
+          );
+          for (const b of expired) {
+            await actor
+              .checkAndUpdateBookingExpired(b.id, todayStr)
+              .catch(() => {});
+          }
+        } catch {
+          // ignore
+        }
+      })();
     }
   }, [actor, isFetching]);
 }
@@ -120,7 +145,6 @@ export function useCreateBooking() {
       amount: bigint;
     }) => {
       if (!actor) throw new Error("Not connected");
-      // Compute expiry date = bookingDate + 30 days
       const startDate = new Date(params.bookingDate);
       startDate.setDate(startDate.getDate() + 30);
       const expiryDate = startDate.toISOString().split("T")[0];
@@ -140,12 +164,11 @@ export function useCreateBooking() {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       queryClient.invalidateQueries({ queryKey: ["bookedSeatIds"] });
       queryClient.invalidateQueries({ queryKey: ["bookedSeatIdsByRoom"] });
-      queryClient.invalidateQueries({ queryKey: ["seatAvailable"] });
+      queryClient.invalidateQueries({ queryKey: ["seats"] });
     },
   });
 }
 
-// rebookSeat in backend.ts only takes (studentId, password) — dates are handled server-side
 export function useRebookSeat() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -153,11 +176,9 @@ export function useRebookSeat() {
     mutationFn: async (params: {
       studentId: string;
       password: string;
-      newUpiTransactionId: string;
+      newUpiTransactionId?: string;
     }) => {
       if (!actor) throw new Error("Not connected");
-      // First update the payment info, then rebook
-      // rebookSeat only takes (studentId, password) in backend.ts
       return actor.rebookSeat(params.studentId, params.password);
     },
     onSuccess: () => {
@@ -167,7 +188,7 @@ export function useRebookSeat() {
   });
 }
 
-// getMessageByCredentials is not in the generated backend.ts interface — use as any
+// Get message for a student by looking up their booking's messages
 export function useGetMessageByCredentials(
   studentId: string,
   password: string,
@@ -178,16 +199,16 @@ export function useGetMessageByCredentials(
     queryKey: ["messageByCredentials", studentId, password],
     queryFn: async () => {
       if (!actor || !studentId || !password) return null;
-      return (actor as any).getMessageByCredentials(
-        studentId,
-        password,
-      ) as Promise<{ content?: string } | null>;
+      const booking = await actor.getBookingByCredentials(studentId, password);
+      if (!booking) return null;
+      const msgs = await actor.getMessagesByBooking(booking.id);
+      if (msgs.length === 0) return null;
+      return msgs[msgs.length - 1];
     },
     enabled: !!actor && !isFetching && enabled && !!studentId && !!password,
   });
 }
 
-// sendMessage in backend.ts: (bookingId, sender, recipient, content, timestamp)
 export function useSendMessage() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -206,7 +227,6 @@ export function useSendMessage() {
       );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["bookings"] });
       queryClient.invalidateQueries({ queryKey: ["messagesByBooking"] });
     },
   });
@@ -250,6 +270,7 @@ export function useApproveBooking() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["seats"] });
     },
   });
 }
@@ -264,12 +285,28 @@ export function useRejectBooking() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["seats"] });
     },
   });
 }
 
-// NOTE: createRoom / updateRoom / deleteRoom do not exist in the backend.
-// These mutations are kept for UI compatibility but will fail gracefully.
+export function useDeleteBooking() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.deleteBooking(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["seats"] });
+      queryClient.invalidateQueries({ queryKey: ["bookedSeatIds"] });
+      queryClient.invalidateQueries({ queryKey: ["bookedSeatIdsByRoom"] });
+    },
+  });
+}
+
 export function useCreateRoom() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -335,23 +372,6 @@ export function useDeleteRoom() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
       queryClient.invalidateQueries({ queryKey: ["seats"] });
-    },
-  });
-}
-
-export function useDeleteBooking() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error("Not connected");
-      return actor.deleteBooking(id);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["bookings"] });
-      queryClient.invalidateQueries({ queryKey: ["seats"] });
-      queryClient.invalidateQueries({ queryKey: ["bookedSeatIds"] });
-      queryClient.invalidateQueries({ queryKey: ["bookedSeatIdsByRoom"] });
     },
   });
 }
