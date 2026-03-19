@@ -14,8 +14,8 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  useBookedSeatIdsByRoom,
   useCreateBooking,
+  useRoomBookingSeatStatus,
   useRooms,
   useSeatsByRoom,
 } from "@/hooks/useQueries";
@@ -62,9 +62,28 @@ function SeatBox({
   seat,
   index,
   isOccupied,
+  isPartial,
   onClick,
-}: { seat: Seat; index: number; isOccupied: boolean; onClick: () => void }) {
+}: {
+  seat: Seat;
+  index: number;
+  isOccupied: boolean;
+  isPartial: boolean;
+  onClick: () => void;
+}) {
   const available = !isOccupied;
+  const colorClass = isOccupied
+    ? "border-red-700 bg-red-950/60 text-red-300 cursor-not-allowed opacity-70"
+    : isPartial
+      ? "border-amber-500 bg-amber-950/60 text-amber-300 cursor-pointer hover:shadow-md hover:border-amber-400"
+      : "border-green-600 bg-green-950/60 text-green-300 cursor-pointer hover:shadow-md hover:border-green-400";
+
+  const title = isOccupied
+    ? `Seat ${seat.seatNumber} — Fully Booked`
+    : isPartial
+      ? `Seat ${seat.seatNumber} — Half-Day taken (1 slot left)`
+      : `Seat ${seat.seatNumber} — Available`;
+
   return (
     <motion.button
       type="button"
@@ -73,12 +92,8 @@ function SeatBox({
       whileTap={available ? { scale: 0.97 } : {}}
       onClick={available ? onClick : undefined}
       disabled={!available}
-      className={`relative w-16 h-16 rounded-lg border-2 flex flex-col items-center justify-center gap-1 transition-all font-medium text-xs ${
-        available
-          ? "seat-available border-green-600 text-white cursor-pointer hover:shadow-md"
-          : "seat-occupied border-red-700 text-white cursor-not-allowed opacity-70"
-      }`}
-      title={`Seat ${seat.seatNumber} — ${available ? "Available" : "Occupied"}`}
+      className={`relative w-16 h-16 rounded-lg border-2 flex flex-col items-center justify-center gap-1 transition-all font-medium text-xs ${colorClass}`}
+      title={title}
     >
       <svg
         viewBox="0 0 24 24"
@@ -170,8 +185,9 @@ export function SeatBookingPage() {
 
   const todayStr = new Date().toISOString().split("T")[0];
 
-  const { data: bookedSeatIds } = useBookedSeatIdsByRoom(roomIdBig);
-  const bookedSet = new Set((bookedSeatIds ?? []).map((id) => id.toString()));
+  const { data: seatStatus } = useRoomBookingSeatStatus(roomIdBig);
+  const fullyBookedIds = seatStatus?.fullyBookedIds ?? new Set<string>();
+  const halfDayBookedIds = seatStatus?.halfDayBookedIds ?? new Set<string>();
 
   const totalAmount = calcMonthlyPrice(monthlySlot);
 
@@ -204,7 +220,9 @@ export function SeatBookingPage() {
       return;
     }
     setSelectedSeat(seat);
-    setMonthlySlot("halfday");
+    // If seat is half-day booked, pre-select halfday (only option)
+    const sid = seat.id.toString();
+    setMonthlySlot(halfDayBookedIds.has(sid) ? "halfday" : "halfday");
     setDialogStep(1);
     setUpiTxnId("");
     setStudentName("");
@@ -252,11 +270,29 @@ export function SeatBookingPage() {
   };
 
   const totalCount = seats?.length ?? 0;
-  const occupiedCount = bookedSet.size;
-  const availableCount = totalCount - occupiedCount;
+  const fullyOccupiedCount = fullyBookedIds.size;
+  const partialCount = halfDayBookedIds.size;
+  const availableCount = totalCount - fullyOccupiedCount - partialCount;
 
   const slotLabel =
     MONTHLY_SLOTS.find((s) => s.value === monthlySlot)?.label ?? monthlySlot;
+
+  // Determine if a seat is occupied based on selected plan
+  const isSeatOccupied = (seatId: string) => {
+    if (monthlySlot === "fullday") {
+      return fullyBookedIds.has(seatId) || halfDayBookedIds.has(seatId);
+    }
+    // halfday: only fully booked seats are unavailable
+    return fullyBookedIds.has(seatId);
+  };
+
+  const isSeatPartial = (seatId: string) => {
+    // Only show partial for halfday plan selection
+    return monthlySlot === "halfday" && halfDayBookedIds.has(seatId);
+  };
+
+  const selectedSeatIsPartial =
+    selectedSeat && halfDayBookedIds.has(selectedSeat.id.toString());
 
   return (
     <main className="min-h-screen bg-background">
@@ -368,10 +404,13 @@ export function SeatBookingPage() {
           {bookingDate && (
             <div className="mt-4 flex flex-wrap gap-2">
               <Badge className="bg-green-900/30 text-green-400 border-green-700/40">
-                {availableCount} seats available
+                {availableCount} fully available
+              </Badge>
+              <Badge className="bg-amber-900/30 text-amber-400 border-amber-700/40">
+                {partialCount} half-day taken
               </Badge>
               <Badge className="bg-red-900/30 text-red-400 border-red-700/40">
-                {occupiedCount} seats occupied
+                {fullyOccupiedCount} fully booked
               </Badge>
             </div>
           )}
@@ -390,14 +429,18 @@ export function SeatBookingPage() {
             <h2 className="font-display text-xl font-semibold text-foreground">
               Seat Map
             </h2>
-            <div className="flex items-center gap-4 text-sm">
+            <div className="flex flex-wrap items-center gap-4 text-xs">
               <span className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 rounded seat-available" />
+                <span className="w-3.5 h-3.5 rounded border-2 border-green-600 bg-green-950/60" />
                 Available
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 rounded seat-occupied" />
-                Occupied
+                <span className="w-3.5 h-3.5 rounded border-2 border-amber-500 bg-amber-950/60" />
+                Half-Day Taken
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3.5 h-3.5 rounded border-2 border-red-700 bg-red-950/60" />
+                Fully Booked
               </span>
             </div>
           </div>
@@ -423,15 +466,19 @@ export function SeatBookingPage() {
             </div>
           ) : (
             <div className="flex flex-wrap gap-3 justify-center">
-              {seats.map((seat, i) => (
-                <SeatBox
-                  key={seat.id.toString()}
-                  seat={seat}
-                  index={i + 1}
-                  isOccupied={bookedSet.has(seat.id.toString())}
-                  onClick={() => handleSeatClick(seat)}
-                />
-              ))}
+              {seats.map((seat, i) => {
+                const sid = seat.id.toString();
+                return (
+                  <SeatBox
+                    key={sid}
+                    seat={seat}
+                    index={i + 1}
+                    isOccupied={isSeatOccupied(sid)}
+                    isPartial={isSeatPartial(sid)}
+                    onClick={() => handleSeatClick(seat)}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
@@ -458,6 +505,12 @@ export function SeatBookingPage() {
                   <p className="text-xs text-navy-300 mt-0.5">
                     Start: {bookingDate} · 30 days
                   </p>
+                  {selectedSeatIsPartial && (
+                    <p className="text-xs text-amber-400 mt-1">
+                      ⚡ This seat has a half-day booking — only Half Day plan
+                      available
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -504,37 +557,49 @@ export function SeatBookingPage() {
                   Select Monthly Plan *
                 </Label>
                 <div className="space-y-2">
-                  {MONTHLY_SLOTS.map((slot) => (
-                    <label
-                      key={slot.value}
-                      htmlFor={`mslot-${slot.value}`}
-                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                        monthlySlot === slot.value
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-border hover:border-blue-400/40"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        id={`mslot-${slot.value}`}
-                        name="monthly-slot"
-                        value={slot.value}
-                        checked={monthlySlot === slot.value}
-                        onChange={() => setMonthlySlot(slot.value)}
-                        data-ocid="booking.radio"
-                        className="accent-blue-600"
-                      />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{slot.label}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {slot.desc}
-                        </p>
-                      </div>
-                      <span className="text-xs font-semibold text-blue-600">
-                        ₹{slot.price}/month
-                      </span>
-                    </label>
-                  ))}
+                  {MONTHLY_SLOTS.map((slot) => {
+                    const sid = selectedSeat?.id.toString() ?? "";
+                    const isDisabled =
+                      slot.value === "fullday" && halfDayBookedIds.has(sid);
+                    return (
+                      <label
+                        key={slot.value}
+                        htmlFor={`mslot-${slot.value}`}
+                        className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                          isDisabled
+                            ? "opacity-40 cursor-not-allowed border-border"
+                            : monthlySlot === slot.value
+                              ? "border-blue-500 bg-blue-50 cursor-pointer"
+                              : "border-border hover:border-blue-400/40 cursor-pointer"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          id={`mslot-${slot.value}`}
+                          name="monthly-slot"
+                          value={slot.value}
+                          checked={monthlySlot === slot.value}
+                          onChange={() =>
+                            !isDisabled && setMonthlySlot(slot.value)
+                          }
+                          disabled={isDisabled}
+                          data-ocid="booking.radio"
+                          className="accent-blue-600"
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{slot.label}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {isDisabled
+                              ? "Not available — seat already has a half-day booking"
+                              : slot.desc}
+                          </p>
+                        </div>
+                        <span className="text-xs font-semibold text-blue-600">
+                          ₹{slot.price}/month
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -573,7 +638,6 @@ export function SeatBookingPage() {
 
           {dialogStep === 2 && (
             <div className="space-y-5">
-              {/* Amount to pay */}
               <div
                 data-ocid="payment.amount_section"
                 className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center"
@@ -590,7 +654,6 @@ export function SeatBookingPage() {
                 </p>
               </div>
 
-              {/* UPI QR + ID section */}
               <div
                 data-ocid="payment.upi_id_section"
                 className="border-2 border-dashed border-primary/30 rounded-xl p-5 text-center bg-primary/[0.02]"
@@ -598,8 +661,6 @@ export function SeatBookingPage() {
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
                   Pay via UPI
                 </p>
-
-                {/* QR Code */}
                 <div className="flex justify-center mb-3">
                   <img
                     src="/assets/uploads/image-1.png"
@@ -607,13 +668,9 @@ export function SeatBookingPage() {
                     className="w-48 h-48 object-contain rounded-lg border border-border shadow-sm"
                   />
                 </div>
-
-                {/* UPI ID */}
                 <p className="text-base font-bold text-foreground tracking-wide">
                   {UPI_ID}
                 </p>
-
-                {/* Helper text */}
                 <p className="text-xs text-muted-foreground mt-1">
                   Scan with any UPI app (PhonePe, GPay, Paytm)
                 </p>
@@ -621,7 +678,6 @@ export function SeatBookingPage() {
 
               <Separator />
 
-              {/* Transaction ID input */}
               <div>
                 <Label
                   htmlFor="upi-txn"
@@ -669,6 +725,7 @@ export function SeatBookingPage() {
           )}
         </DialogContent>
       </Dialog>
+
       {/* Credentials Dialog */}
       <Dialog open={credDialogOpen} onOpenChange={setCredDialogOpen}>
         <DialogContent data-ocid="credentials.dialog" className="sm:max-w-md">

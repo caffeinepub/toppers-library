@@ -100,6 +100,51 @@ export function useBookedSeatIdsByRoom(roomId: bigint) {
   });
 }
 
+// Returns which seats are fully blocked vs half-day available
+export function useRoomBookingSeatStatus(roomId: bigint) {
+  const { actor, isFetching } = useActor();
+  return useQuery({
+    queryKey: ["roomSeatStatus", roomId.toString()],
+    queryFn: async () => {
+      if (!actor)
+        return {
+          fullyBookedIds: new Set<string>(),
+          halfDayBookedIds: new Set<string>(),
+        };
+      const allBookings = await actor.getBookings();
+      const active = allBookings.filter(
+        (b) =>
+          b.roomId === roomId &&
+          (b.status === BookingStatus.pending ||
+            b.status === BookingStatus.approved),
+      );
+      const halfdayCount: Record<string, number> = {};
+      const fullDaySet = new Set<string>();
+      for (const b of active) {
+        const sid = b.seatId.toString();
+        if (b.timeSlot === "fullday") {
+          fullDaySet.add(sid);
+        } else {
+          halfdayCount[sid] = (halfdayCount[sid] || 0) + 1;
+        }
+      }
+      const fullyBookedIds = new Set<string>([
+        ...fullDaySet,
+        ...Object.entries(halfdayCount)
+          .filter(([, count]) => count >= 2)
+          .map(([id]) => id),
+      ]);
+      const halfDayBookedIds = new Set<string>(
+        Object.entries(halfdayCount)
+          .filter(([id, count]) => count === 1 && !fullDaySet.has(id))
+          .map(([id]) => id),
+      );
+      return { fullyBookedIds, halfDayBookedIds };
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
 // Initialize on startup and check expired bookings per-booking
 export function useInitialize() {
   const { actor, isFetching } = useActor();
@@ -164,6 +209,7 @@ export function useCreateBooking() {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       queryClient.invalidateQueries({ queryKey: ["bookedSeatIds"] });
       queryClient.invalidateQueries({ queryKey: ["bookedSeatIdsByRoom"] });
+      queryClient.invalidateQueries({ queryKey: ["roomSeatStatus"] });
       queryClient.invalidateQueries({ queryKey: ["seats"] });
     },
   });
@@ -184,6 +230,7 @@ export function useRebookSeat() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       queryClient.invalidateQueries({ queryKey: ["bookedSeatIdsByRoom"] });
+      queryClient.invalidateQueries({ queryKey: ["roomSeatStatus"] });
     },
   });
 }
@@ -256,6 +303,7 @@ export function useCancelBooking() {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       queryClient.invalidateQueries({ queryKey: ["bookedSeatIds"] });
       queryClient.invalidateQueries({ queryKey: ["seats"] });
+      queryClient.invalidateQueries({ queryKey: ["roomSeatStatus"] });
     },
   });
 }
@@ -271,6 +319,7 @@ export function useApproveBooking() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       queryClient.invalidateQueries({ queryKey: ["seats"] });
+      queryClient.invalidateQueries({ queryKey: ["roomSeatStatus"] });
     },
   });
 }
@@ -286,6 +335,7 @@ export function useRejectBooking() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       queryClient.invalidateQueries({ queryKey: ["seats"] });
+      queryClient.invalidateQueries({ queryKey: ["roomSeatStatus"] });
     },
   });
 }
@@ -303,6 +353,7 @@ export function useDeleteBooking() {
       queryClient.invalidateQueries({ queryKey: ["seats"] });
       queryClient.invalidateQueries({ queryKey: ["bookedSeatIds"] });
       queryClient.invalidateQueries({ queryKey: ["bookedSeatIdsByRoom"] });
+      queryClient.invalidateQueries({ queryKey: ["roomSeatStatus"] });
     },
   });
 }

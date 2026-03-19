@@ -76,7 +76,7 @@ export function AdminLoginPage() {
       const result = await actor.getBookings();
       setBookings(result as Booking[]);
     } catch {
-      // silently fail refresh
+      toast.error("Could not refresh bookings. Please try again.");
     }
   };
 
@@ -145,16 +145,23 @@ export function AdminLoginPage() {
       setError("Invalid credentials. Please check your username and password.");
       return;
     }
-    if (!actor) return;
-    setLoading(true);
+
+    // Credentials are valid — log in immediately with empty bookings list
     setError("");
-    try {
-      const result = await actor.getBookings();
-      setBookings(result as Booking[]);
-    } catch {
-      setError("Failed to load bookings. Please try again.");
-    } finally {
-      setLoading(false);
+    setBookings([]);
+
+    // Then attempt to load bookings in the background
+    if (actor) {
+      setLoading(true);
+      try {
+        const result = await actor.getBookings();
+        setBookings(result as Booking[]);
+      } catch {
+        toast.error("Could not load bookings. Please refresh.");
+        // Keep empty array — admin stays logged in
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -278,7 +285,7 @@ export function AdminLoginPage() {
                     type="submit"
                     data-ocid="admin_login.submit_button"
                     className="w-full bg-black text-white hover:bg-black/80"
-                    disabled={loading || isFetching || !actor}
+                    disabled={loading || isFetching}
                   >
                     {loading ? (
                       <>
@@ -319,7 +326,14 @@ export function AdminLoginPage() {
               </div>
             </div>
 
-            {bookings.length === 0 ? (
+            {loading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading bookings…
+              </div>
+            )}
+
+            {bookings.length === 0 && !loading ? (
               <Card
                 className="shadow-sm border border-border"
                 data-ocid="admin_login.empty_state"
