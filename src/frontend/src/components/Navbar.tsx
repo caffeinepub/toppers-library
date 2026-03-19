@@ -44,9 +44,8 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-2">
           <Link to="/student-login" data-ocid="nav.student_login_link">
             <Button
-              variant="outline"
               size="sm"
-              className="border-navy-400 text-navy-100 hover:bg-navy-700 hover:text-white flex items-center gap-1.5"
+              className="bg-black text-white hover:bg-black/80 flex items-center gap-1.5"
             >
               <GraduationCap className="w-4 h-4" /> Student Login
             </Button>
@@ -54,7 +53,7 @@ export function Navbar() {
           <Link to="/admin-login" data-ocid="nav.admin_login_link">
             <Button
               size="sm"
-              className="bg-gold-500 text-navy-900 font-semibold hover:bg-gold-300 border-0 flex items-center gap-1.5"
+              className="bg-black text-white hover:bg-black/80 flex items-center gap-1.5"
             >
               <ShieldCheck className="w-4 h-4" /> Admin Login
             </Button>
@@ -90,9 +89,8 @@ export function Navbar() {
           <div className="pt-2 border-t border-navy-700 flex flex-col gap-2">
             <Link to="/student-login" onClick={() => setMobileOpen(false)}>
               <Button
-                variant="outline"
                 size="sm"
-                className="w-full border-navy-400 text-navy-100 hover:bg-navy-700 flex items-center gap-1.5 justify-center"
+                className="w-full bg-black text-white hover:bg-black/80 flex items-center gap-1.5 justify-center"
               >
                 <GraduationCap className="w-4 h-4" /> Student Login
               </Button>
@@ -100,7 +98,7 @@ export function Navbar() {
             <Link to="/admin-login" onClick={() => setMobileOpen(false)}>
               <Button
                 size="sm"
-                className="w-full bg-gold-500 text-navy-900 font-semibold flex items-center gap-1.5 justify-center"
+                className="w-full bg-black text-white hover:bg-black/80 flex items-center gap-1.5 justify-center"
               >
                 <ShieldCheck className="w-4 h-4" /> Admin Login
               </Button>
