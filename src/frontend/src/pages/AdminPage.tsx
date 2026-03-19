@@ -36,7 +36,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useApproveBooking,
-  useBookedSeatIds,
+  useBookedSeatIdsByRoom,
   useBookings,
   useBookingsByDate,
   useCancelBooking,
@@ -118,6 +118,8 @@ function SlotBadge({ slot }: { slot: string }) {
     morning: "bg-sky-900/30 text-sky-400 border-sky-700/40",
     afternoon: "bg-orange-900/30 text-orange-400 border-orange-700/40",
     evening: "bg-purple-900/30 text-purple-400 border-purple-700/40",
+    halfday: "bg-blue-900/30 text-blue-400 border-blue-700/40",
+    fullday: "bg-violet-900/30 text-violet-400 border-violet-700/40",
   };
   return (
     <Badge
@@ -170,20 +172,9 @@ function StatCard({
   );
 }
 
-function RoomSeatsRow({
-  room,
-  dateFilter,
-  slotFilter,
-}: {
-  room: Room;
-  dateFilter: string;
-  slotFilter: string;
-}) {
+function RoomSeatsRow({ room }: { room: Room }) {
   const { data: seats } = useSeatsByRoom(room.id);
-  const { data: bookedIds } = useBookedSeatIds(
-    dateFilter || new Date().toISOString().split("T")[0],
-    slotFilter || "morning",
-  );
+  const { data: bookedIds } = useBookedSeatIdsByRoom(room.id);
 
   const total = seats?.length ?? 0;
   const booked = bookedIds
@@ -252,7 +243,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [roomFilter, setRoomFilter] = useState("all");
   const [seatsDate, setSeatsDate] = useState("");
-  const [seatsSlot, setSeatsSlot] = useState("morning");
+  const [seatsSlot, setSeatsSlot] = useState("halfday");
   const [adminMessageInputs, setAdminMessageInputs] = useState<
     Record<string, string>
   >({});
@@ -276,9 +267,6 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     (sum, b) => sum + Number(b.amount),
     0,
   );
-  const dailyRevenue = approvedBookings
-    .filter((b) => b.bookingDuration === "daily")
-    .reduce((sum, b) => sum + Number(b.amount), 0);
   const monthlyRevenue = approvedBookings
     .filter((b) => b.bookingDuration === "monthly")
     .reduce((sum, b) => sum + Number(b.amount), 0);
@@ -297,7 +285,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     .reduce((sum, b) => sum + Number(b.amount), 0);
 
   // Booked seats count
-  const bookedSeatsCount = approvedBookings.length;
+  const bookedSeatsCount = new Set(
+    approvedBookings.map((b) => b.seatId.toString()),
+  ).size;
 
   // Daily data for last 14 days
   const last14Days = Array.from({ length: 14 }, (_, i) => {
@@ -1311,11 +1301,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="morning">Morning (6AM-12PM)</SelectItem>
-                    <SelectItem value="afternoon">
-                      Afternoon (12PM-6PM)
+                    <SelectItem value="halfday">
+                      Half Day (1 shift/day)
                     </SelectItem>
-                    <SelectItem value="evening">Evening (6PM-10PM)</SelectItem>
+                    <SelectItem value="fullday">
+                      Full Day (all shifts)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1335,12 +1326,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             ) : (
               <div className="space-y-3">
                 {rooms?.map((room) => (
-                  <RoomSeatsRow
-                    key={room.id.toString()}
-                    room={room}
-                    dateFilter={seatsDate}
-                    slotFilter={seatsSlot}
-                  />
+                  <RoomSeatsRow key={room.id.toString()} room={room} />
                 ))}
               </div>
             )}
@@ -1474,27 +1460,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               </Card>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-              <Card className="border-border shadow-navy-sm">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Daily Bookings Revenue
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold text-foreground font-display">
-                    ₹{dailyRevenue.toLocaleString("en-IN")}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {
-                      approvedBookings.filter(
-                        (b) => b.bookingDuration === "daily",
-                      ).length
-                    }{" "}
-                    daily bookings
-                  </p>
-                </CardContent>
-              </Card>
+            <div className="mb-8">
               <Card className="border-border shadow-navy-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -1511,7 +1477,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                         (b) => b.bookingDuration === "monthly",
                       ).length
                     }{" "}
-                    monthly bookings
+                    monthly bookings confirmed
                   </p>
                 </CardContent>
               </Card>

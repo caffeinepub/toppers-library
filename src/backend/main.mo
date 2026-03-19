@@ -4,9 +4,9 @@ import Text "mo:core/Text";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import Order "mo:core/Order";
-import Migration "migration";
 
-(with migration = Migration.run)
+
+
 actor {
   module Room {
     public func compare(room1 : Room, room2 : Room) : Order.Order {
@@ -215,6 +215,10 @@ actor {
     rooms.values().toArray().sort();
   };
 
+  public query func getSeats() : async [Seat] {
+    seats.values().toArray().sort();
+  };
+
   public shared func updateSeatAvailability(id : Nat, isAvailable : Bool) : async Seat {
     switch (seats.get(id)) {
       case (null) { Runtime.trap("Seat not found") };
@@ -233,7 +237,7 @@ actor {
   };
 
   public query func getSeatsByRoom(roomId : Nat) : async [Seat] {
-    seats.values().toArray().filter(func(seat) { seat.roomId == roomId });
+    seats.values().toArray().filter(func(seat) { seat.roomId == roomId }).sort();
   };
 
   public query func getSeat(id : Nat) : async Seat {
@@ -304,7 +308,7 @@ actor {
     };
   };
 
-  // Admin: approve booking
+  // Admin: approve booking — sets paymentStatus = "approved" (used by frontend checks)
   public shared func approveBooking(id : Nat) : async Booking {
     switch (bookings.get(id)) {
       case (null) { Runtime.trap("Booking not found") };
@@ -321,7 +325,7 @@ actor {
           bookingDuration = booking.bookingDuration;
           status = "approved";
           upiTransactionId = booking.upiTransactionId;
-          paymentStatus = "paid";
+          paymentStatus = "approved";
           amount = booking.amount;
         };
         bookings.add(id, updatedBooking);
@@ -343,7 +347,7 @@ actor {
     };
   };
 
-  // Admin: reject booking
+  // Admin: reject booking — sets paymentStatus = "rejected" AND frees the seat
   public shared func rejectBooking(id : Nat) : async Booking {
     switch (bookings.get(id)) {
       case (null) { Runtime.trap("Booking not found") };
@@ -360,10 +364,24 @@ actor {
           bookingDuration = booking.bookingDuration;
           status = "rejected";
           upiTransactionId = booking.upiTransactionId;
-          paymentStatus = booking.paymentStatus;
+          paymentStatus = "rejected";
           amount = booking.amount;
         };
         bookings.add(id, updatedBooking);
+        // Free the seat so it can be rebooked
+        switch (seats.get(booking.seatId)) {
+          case (null) {};
+          case (?seat) {
+            let freed : Seat = {
+              id = seat.id;
+              roomId = seat.roomId;
+              seatNumber = seat.seatNumber;
+              seatType = seat.seatType;
+              isAvailable = true;
+            };
+            seats.add(seat.id, freed);
+          };
+        };
         updatedBooking;
       };
     };
@@ -415,6 +433,20 @@ actor {
           amount = booking.amount;
         };
         bookings.add(id, updatedBooking);
+        // Free the seat so it can be rebooked
+        switch (seats.get(booking.seatId)) {
+          case (null) {};
+          case (?seat) {
+            let freed : Seat = {
+              id = seat.id;
+              roomId = seat.roomId;
+              seatNumber = seat.seatNumber;
+              seatType = seat.seatType;
+              isAvailable = true;
+            };
+            seats.add(seat.id, freed);
+          };
+        };
         updatedBooking;
       };
     };
@@ -463,6 +495,7 @@ actor {
   };
 
   // Rebook: student renews same seat for another 30 days
+  // OLD booking is cancelled before new one is created
   public shared func rebookSeat(studentId : Text, password : Text, newBookingDate : Text, newExpiryDate : Text, newUpiTransactionId : Text) : async BookingResult {
     switch (credentials.get(studentId)) {
       case (null) { Runtime.trap("Invalid student ID") };
@@ -471,6 +504,25 @@ actor {
         switch (bookings.get(cred.bookingId)) {
           case (null) { Runtime.trap("Original booking not found") };
           case (?orig) {
+            // Cancel old booking
+            let cancelledBooking : Booking = {
+              id = orig.id;
+              seatId = orig.seatId;
+              roomId = orig.roomId;
+              studentName = orig.studentName;
+              studentContact = orig.studentContact;
+              bookingDate = orig.bookingDate;
+              expiryDate = orig.expiryDate;
+              timeSlot = orig.timeSlot;
+              bookingDuration = orig.bookingDuration;
+              status = "cancelled";
+              upiTransactionId = orig.upiTransactionId;
+              paymentStatus = orig.paymentStatus;
+              amount = orig.amount;
+            };
+            bookings.add(orig.id, cancelledBooking);
+
+            // Create new booking
             let newBooking : Booking = {
               id = bookingIdCounter;
               seatId = orig.seatId;

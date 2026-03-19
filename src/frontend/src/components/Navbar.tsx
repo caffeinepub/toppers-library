@@ -1,28 +1,14 @@
 import { Button } from "@/components/ui/button";
-import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { Link } from "@tanstack/react-router";
 import { BookOpen, GraduationCap, Menu, ShieldCheck, X } from "lucide-react";
 import { useState } from "react";
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { login, clear, loginStatus, identity } = useInternetIdentity();
-  const isLoggedIn = loginStatus === "success" && !!identity;
 
   const navLinks = [
     { to: "/", label: "Home", ocid: "nav.home_link" },
     { to: "/rooms", label: "Rooms", ocid: "nav.rooms_link" },
-    { to: "/rooms", label: "Book a Seat", ocid: "nav.book_link" },
-    {
-      to: "/student-login",
-      label: "Student Login",
-      ocid: "nav.student_login_link",
-    },
-    {
-      to: "/admin-login",
-      label: "Admin Login",
-      ocid: "nav.admin_login_link",
-    },
   ];
 
   return (
@@ -37,6 +23,7 @@ export function Navbar() {
           </span>
         </Link>
 
+        {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => (
             <Link
@@ -49,46 +36,29 @@ export function Navbar() {
                   "px-4 py-2 text-sm font-medium text-gold-500 rounded-md bg-navy-700",
               }}
             >
-              {link.label === "Student Login" ? (
-                <span className="flex items-center gap-1.5">
-                  <GraduationCap className="w-4 h-4" /> {link.label}
-                </span>
-              ) : link.label === "Admin Login" ? (
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4" /> {link.label}
-                </span>
-              ) : (
-                link.label
-              )}
+              {link.label}
             </Link>
           ))}
         </nav>
 
-        <div className="hidden md:flex items-center gap-3">
-          {isLoggedIn ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-navy-200 max-w-[120px] truncate">
-                {identity?.getPrincipal().toString().slice(0, 12)}...
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clear}
-                className="border-navy-500 text-navy-100 hover:bg-navy-700 hover:text-white"
-              >
-                Sign Out
-              </Button>
-            </div>
-          ) : (
+        <div className="hidden md:flex items-center gap-2">
+          <Link to="/student-login" data-ocid="nav.student_login_link">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-navy-400 text-navy-100 hover:bg-navy-700 hover:text-white flex items-center gap-1.5"
+            >
+              <GraduationCap className="w-4 h-4" /> Student Login
+            </Button>
+          </Link>
+          <Link to="/admin-login" data-ocid="nav.admin_login_link">
             <Button
               size="sm"
-              onClick={login}
-              disabled={loginStatus === "logging-in"}
-              className="bg-gold-500 text-navy-900 font-semibold hover:bg-gold-300 border-0"
+              className="bg-gold-500 text-navy-900 font-semibold hover:bg-gold-300 border-0 flex items-center gap-1.5"
             >
-              {loginStatus === "logging-in" ? "Connecting..." : "Sign In"}
+              <ShieldCheck className="w-4 h-4" /> Admin Login
             </Button>
-          )}
+          </Link>
         </div>
 
         <button
@@ -114,45 +84,27 @@ export function Navbar() {
               className="px-3 py-2 text-sm font-medium text-navy-100 rounded-md hover:bg-navy-700"
               onClick={() => setMobileOpen(false)}
             >
-              {link.label === "Student Login" ? (
-                <span className="flex items-center gap-1.5">
-                  <GraduationCap className="w-4 h-4" /> {link.label}
-                </span>
-              ) : link.label === "Admin Login" ? (
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4" /> {link.label}
-                </span>
-              ) : (
-                link.label
-              )}
+              {link.label}
             </Link>
           ))}
-
-          <div className="pt-2 border-t border-navy-700">
-            {isLoggedIn ? (
+          <div className="pt-2 border-t border-navy-700 flex flex-col gap-2">
+            <Link to="/student-login" onClick={() => setMobileOpen(false)}>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  clear();
-                  setMobileOpen(false);
-                }}
-                className="w-full border-navy-500 text-navy-100"
+                className="w-full border-navy-400 text-navy-100 hover:bg-navy-700 flex items-center gap-1.5 justify-center"
               >
-                Sign Out
+                <GraduationCap className="w-4 h-4" /> Student Login
               </Button>
-            ) : (
+            </Link>
+            <Link to="/admin-login" onClick={() => setMobileOpen(false)}>
               <Button
                 size="sm"
-                onClick={() => {
-                  login();
-                  setMobileOpen(false);
-                }}
-                className="w-full bg-gold-500 text-navy-900 font-semibold"
+                className="w-full bg-gold-500 text-navy-900 font-semibold flex items-center gap-1.5 justify-center"
               >
-                Sign In
+                <ShieldCheck className="w-4 h-4" /> Admin Login
               </Button>
-            )}
+            </Link>
           </div>
         </div>
       )}

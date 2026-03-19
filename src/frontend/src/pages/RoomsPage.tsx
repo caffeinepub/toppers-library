@@ -2,7 +2,7 @@ import type { Room } from "@/backend.d";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRooms } from "@/hooks/useQueries";
+import { useBookedSeatIdsByRoom, useRooms } from "@/hooks/useQueries";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronRight, CreditCard, Snowflake, Star, Users } from "lucide-react";
 import { motion } from "motion/react";
@@ -10,19 +10,23 @@ import { motion } from "motion/react";
 function conditionColor(condition: string) {
   switch (condition.toLowerCase()) {
     case "excellent":
-      return "bg-green-900/30 text-green-400 border-green-700/40";
+      return "bg-green-100 text-green-700 border-green-200";
     case "good":
-      return "bg-blue-900/30 text-blue-400 border-blue-700/40";
+      return "bg-blue-100 text-blue-700 border-blue-200";
     case "fair":
-      return "bg-yellow-900/30 text-yellow-400 border-yellow-700/40";
+      return "bg-yellow-100 text-yellow-700 border-yellow-200";
     default:
-      return "bg-gray-800/50 text-gray-400 border-gray-700/40";
+      return "bg-gray-100 text-gray-600 border-gray-200";
   }
 }
 
 function RoomCard({ room, index }: { room: Room; index: number }) {
   const navigate = useNavigate();
   const ocid = `rooms.item.${index}`;
+  const { data: bookedIds } = useBookedSeatIdsByRoom(room.id);
+  const totalSeats = Number(room.capacity);
+  const bookedCount = bookedIds?.length ?? 0;
+  const availableSeats = Math.max(0, totalSeats - bookedCount);
 
   return (
     <motion.div
@@ -32,7 +36,7 @@ function RoomCard({ room, index }: { room: Room; index: number }) {
       data-ocid={ocid}
       className="bg-card border border-border rounded-xl overflow-hidden shadow-navy-sm hover:shadow-navy-md transition-all group"
     >
-      <div className="bg-navy-700 px-5 py-4 flex items-start justify-between">
+      <div className="bg-navy-800 px-5 py-5 flex items-start justify-between">
         <div>
           <h3 className="font-display text-xl font-bold text-white">
             {room.name}
@@ -55,15 +59,49 @@ function RoomCard({ room, index }: { room: Room; index: number }) {
           {room.description}
         </p>
 
-        <div className="flex items-center gap-4 text-sm mb-5">
+        <div className="flex items-center gap-4 text-sm mb-3">
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <Users className="w-4 h-4" />
-            <span>{room.capacity.toString()} seats total</span>
+            <span>{totalSeats} seats total</span>
+          </div>
+        </div>
+
+        {/* Live seat availability */}
+        <div className="mb-5 bg-muted/60 rounded-lg px-4 py-3">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-medium text-foreground">
+              Seats Available
+            </span>
+            <span
+              className={`text-xs font-bold ${
+                availableSeats === 0
+                  ? "text-red-600"
+                  : availableSeats < 5
+                    ? "text-orange-600"
+                    : "text-emerald-600"
+              }`}
+            >
+              {availableSeats} of {totalSeats}
+            </span>
+          </div>
+          <div className="h-2 bg-border rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${
+                availableSeats === 0
+                  ? "bg-red-500"
+                  : availableSeats < 5
+                    ? "bg-orange-400"
+                    : "bg-emerald-500"
+              }`}
+              style={{
+                width: `${totalSeats > 0 ? (availableSeats / totalSeats) * 100 : 0}%`,
+              }}
+            />
           </div>
         </div>
 
         <Button
-          className="w-full bg-navy-700 text-white hover:bg-navy-600 group-hover:bg-primary transition-colors"
+          className="w-full bg-black text-white hover:bg-black/80 transition-colors"
           size="sm"
           onClick={() =>
             navigate({
@@ -100,7 +138,7 @@ function PricingTable() {
             <p className="text-base font-semibold text-blue-800">Half Day</p>
             <p className="text-sm text-blue-600">1 shift/day for 30 days</p>
             <p className="text-xs text-blue-400 mt-1">
-              (Morning, Afternoon, or Evening)
+              Your preferred shift schedule
             </p>
           </div>
           <div className="text-right">
@@ -108,15 +146,15 @@ function PricingTable() {
             <span className="text-xs text-blue-500 block">/month</span>
           </div>
         </div>
-        <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-200">
+        <div className="flex items-center justify-between p-4 bg-navy-800 rounded-xl border border-navy-700">
           <div>
-            <p className="text-base font-semibold text-blue-800">Full Day</p>
-            <p className="text-sm text-blue-600">All shifts/day for 30 days</p>
-            <p className="text-xs text-blue-400 mt-1">(6:00 AM – 10:00 PM)</p>
+            <p className="text-base font-semibold text-white">Full Day</p>
+            <p className="text-sm text-navy-300">All shifts/day for 30 days</p>
+            <p className="text-xs text-navy-400 mt-1">(6:00 AM – 10:00 PM)</p>
           </div>
           <div className="text-right">
-            <span className="text-2xl font-bold text-blue-700">₹1,200</span>
-            <span className="text-xs text-blue-500 block">/month</span>
+            <span className="text-2xl font-bold text-gold-500">₹1,200</span>
+            <span className="text-xs text-navy-400 block">/month</span>
           </div>
         </div>
       </div>

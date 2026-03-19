@@ -14,7 +14,6 @@ import {
 import { Link } from "@tanstack/react-router";
 import {
   AlertCircle,
-  Bell,
   CheckCircle,
   CheckCircle2,
   Clock,
@@ -95,7 +94,7 @@ export function AdminLoginPage() {
     if (!confirm(`Reject booking for ${studentName}?`)) return;
     try {
       await rejectBookingMutation.mutateAsync(id);
-      toast.error(`Booking rejected for ${studentName}.`);
+      toast.success(`Booking rejected for ${studentName}.`);
       await refreshBookings();
     } catch {
       toast.error("Failed to reject booking.");
@@ -167,27 +166,27 @@ export function AdminLoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-gray-900 py-10">
+      <div className="bg-navy-800 py-10">
         <div className="container mx-auto px-4">
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 text-gray-300 hover:text-white text-sm mb-4 transition-colors"
+            className="inline-flex items-center gap-1.5 text-navy-300 hover:text-white text-sm mb-4 transition-colors"
             data-ocid="admin_login.link"
           >
             <Home className="w-4 h-4" /> Back to Home
           </Link>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5 text-white" />
+              <div className="w-11 h-11 rounded-xl bg-gold-500/20 border border-gold-500/30 flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5 text-gold-500" />
               </div>
               <div>
                 <h1 className="font-display text-3xl font-bold text-white">
                   Admin Portal
                 </h1>
-                <p className="text-gray-300 text-sm mt-0.5">
+                <p className="text-navy-300 text-sm mt-0.5">
                   View &amp; manage all bookings
                 </p>
               </div>
@@ -198,7 +197,7 @@ export function AdminLoginPage() {
                 size="sm"
                 onClick={handleSignOut}
                 data-ocid="admin_login.secondary_button"
-                className="border-white/30 text-white hover:bg-white/10 flex items-center gap-1.5"
+                className="border-navy-400 text-navy-100 hover:bg-navy-700 hover:text-white flex items-center gap-1.5"
               >
                 <LogOut className="w-4 h-4" /> Sign Out
               </Button>
@@ -216,7 +215,7 @@ export function AdminLoginPage() {
             transition={{ duration: 0.4 }}
             className="max-w-md mx-auto"
           >
-            <Card className="shadow-sm border border-gray-200">
+            <Card className="shadow-sm border border-border">
               <CardHeader className="pb-4">
                 <CardTitle className="font-display text-xl">
                   Admin Login
@@ -278,7 +277,7 @@ export function AdminLoginPage() {
                   <Button
                     type="submit"
                     data-ocid="admin_login.submit_button"
-                    className="w-full bg-gray-900 text-white hover:bg-gray-700"
+                    className="w-full bg-black text-white hover:bg-black/80"
                     disabled={loading || isFetching || !actor}
                   >
                     {loading ? (
@@ -303,18 +302,26 @@ export function AdminLoginPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-2xl font-bold text-gray-900">
+            <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <h2 className="font-display text-2xl font-bold text-foreground">
                 All Bookings
                 <span className="ml-2 text-base font-normal text-muted-foreground">
                   ({bookings.length} total)
                 </span>
               </h2>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                {bookings.filter((b) => b.paymentStatus === "approved").length}{" "}
+                approved
+                <span className="w-2 h-2 rounded-full bg-yellow-400 ml-2" />
+                {bookings.filter((b) => b.paymentStatus === "pending").length}{" "}
+                pending
+              </div>
             </div>
 
             {bookings.length === 0 ? (
               <Card
-                className="shadow-sm border border-gray-200"
+                className="shadow-sm border border-border"
                 data-ocid="admin_login.empty_state"
               >
                 <CardContent className="py-16 text-center text-muted-foreground">
@@ -322,38 +329,35 @@ export function AdminLoginPage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm bg-white">
+              <div className="overflow-x-auto rounded-xl border border-border shadow-navy-sm bg-card">
                 <table className="w-full text-sm" data-ocid="admin_login.table">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-muted/60 border-b border-border">
                     <tr>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-700">
+                      <th className="text-left px-4 py-3 font-semibold text-foreground">
                         #
                       </th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-700">
-                        Student Name
+                      <th className="text-left px-4 py-3 font-semibold text-foreground">
+                        Student
                       </th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-700">
+                      <th className="text-left px-4 py-3 font-semibold text-foreground">
                         Contact
                       </th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-700">
-                        Seat ID
+                      <th className="text-left px-4 py-3 font-semibold text-foreground">
+                        Room / Seat
                       </th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-700">
+                      <th className="text-left px-4 py-3 font-semibold text-foreground">
                         Plan
                       </th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-700">
-                        Date
+                      <th className="text-left px-4 py-3 font-semibold text-foreground">
+                        Dates
                       </th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-700">
-                        Expiry
-                      </th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-700">
+                      <th className="text-left px-4 py-3 font-semibold text-foreground">
                         Amount
                       </th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-700">
+                      <th className="text-left px-4 py-3 font-semibold text-foreground">
                         Status
                       </th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-700">
+                      <th className="text-left px-4 py-3 font-semibold text-foreground">
                         Actions
                       </th>
                     </tr>
@@ -362,7 +366,7 @@ export function AdminLoginPage() {
                     {bookings.map((booking, idx) => (
                       <tr
                         key={booking.id.toString()}
-                        className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                        className="border-b border-border hover:bg-muted/30 transition-colors"
                         data-ocid={`admin_login.item.${idx + 1}`}
                       >
                         <td className="px-4 py-3 text-muted-foreground">
@@ -375,19 +379,26 @@ export function AdminLoginPage() {
                           {booking.studentContact}
                         </td>
                         <td className="px-4 py-3">
-                          #{booking.seatId.toString()}
+                          <span className="font-medium">
+                            {booking.roomId === 1n ? "Hall A" : "Hall B"}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {" "}
+                            — #{booking.seatId.toString()}
+                          </span>
                         </td>
                         <td className="px-4 py-3 capitalize">
-                          {booking.bookingDuration} —{" "}
                           {booking.timeSlot === "halfday"
                             ? "Half Day"
                             : "Full Day"}
                         </td>
-                        <td className="px-4 py-3">{booking.bookingDate}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
-                          {booking.expiryDate || "—"}
+                        <td className="px-4 py-3 text-xs">
+                          <div>{booking.bookingDate}</div>
+                          <div className="text-muted-foreground">
+                            → {booking.expiryDate || "—"}
+                          </div>
                         </td>
-                        <td className="px-4 py-3 font-medium">
+                        <td className="px-4 py-3 font-semibold">
                           ₹{booking.amount.toString()}
                         </td>
                         <td className="px-4 py-3">
@@ -437,13 +448,13 @@ export function AdminLoginPage() {
                                   handleRemove(booking.id, booking.studentName)
                                 }
                                 disabled={deleteBookingMutation.isPending}
-                                className="h-7 px-2 text-xs border-gray-400 text-gray-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                                className="h-7 px-2 text-xs border-border text-muted-foreground hover:bg-red-50 hover:text-red-700 hover:border-red-300"
                                 data-ocid={`admin_login.booking.delete_button.${idx + 1}`}
                               >
                                 <Trash2 className="w-3 h-3 mr-1" /> Remove
                               </Button>
                             </div>
-                            {/* Send Message — only for pending bookings */}
+                            {/* Send message — only for pending bookings */}
                             {booking.paymentStatus === "pending" && (
                               <div className="flex items-center gap-1 min-w-[220px]">
                                 <Input
@@ -458,7 +469,7 @@ export function AdminLoginPage() {
                                   }
                                   placeholder="Send message to student…"
                                   className="h-7 text-xs"
-                                  data-ocid={"admin_login.input"}
+                                  data-ocid="admin_login.input"
                                 />
                                 <Button
                                   size="sm"
