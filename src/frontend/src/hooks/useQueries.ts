@@ -1,5 +1,6 @@
 import { useActor } from "@/hooks/useActor";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 export function useRooms() {
   const { actor, isFetching } = useActor();
@@ -83,6 +84,18 @@ export function useIsAdmin() {
     },
     enabled: !!actor && !isFetching,
   });
+}
+
+// Calls _initialize() on startup to seed rooms and seats if not already done
+export function useInitialize() {
+  const { actor, isFetching } = useActor();
+  useEffect(() => {
+    if (actor && !isFetching) {
+      actor._initialize().catch(() => {
+        // silently ignore if already initialized or error
+      });
+    }
+  }, [actor, isFetching]);
 }
 
 export function useCreateBooking() {
@@ -230,8 +243,4 @@ export function useDeleteRoom() {
       queryClient.invalidateQueries({ queryKey: ["seats"] });
     },
   });
-}
-
-export function useInitialize() {
-  // No-op: initialization is handled by backend automatically
 }
