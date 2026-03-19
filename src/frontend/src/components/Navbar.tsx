@@ -1,111 +1,103 @@
-import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { BookOpen, GraduationCap, Menu, ShieldCheck, X } from "lucide-react";
+import { BookOpen, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 export function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  const navLinks = [
-    { to: "/", label: "Home", ocid: "nav.home_link" },
-    { to: "/rooms", label: "Rooms", ocid: "nav.rooms_link" },
-  ];
+  const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-navy-800 shadow-navy-md border-b border-navy-700">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-9 h-9 rounded-lg bg-gold-500 flex items-center justify-center shadow-sm">
-            <BookOpen className="w-5 h-5 text-navy-900" />
-          </div>
-          <span className="font-display text-xl font-bold text-white tracking-tight">
-            Toppers <span className="text-gold-500">Library</span>
-          </span>
-        </Link>
+    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border shadow-lg shadow-black/20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center shadow-md shadow-primary/30 group-hover:shadow-primary/50 transition-shadow">
+              <BookOpen className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-display font-bold text-lg text-foreground">
+              Toppers <span className="text-accent">Library</span>
+            </span>
+          </Link>
 
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-1">
-          {navLinks.map((link) => (
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center gap-8">
             <Link
-              key={link.ocid}
-              to={link.to}
-              data-ocid={link.ocid}
-              className="px-4 py-2 text-sm font-medium text-navy-100 rounded-md hover:text-white hover:bg-navy-700 transition-colors"
-              activeProps={{
-                className:
-                  "px-4 py-2 text-sm font-medium text-gold-500 rounded-md bg-navy-700",
-              }}
+              to="/"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              data-ocid="nav.home.link"
             >
-              {link.label}
+              Home
             </Link>
-          ))}
-        </nav>
+            <Link
+              to="/rooms"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              data-ocid="nav.rooms.link"
+            >
+              Rooms
+            </Link>
+          </nav>
 
-        <div className="hidden md:flex items-center gap-2">
-          <Link to="/student-login" data-ocid="nav.student_login_link">
-            <Button
-              size="sm"
-              className="bg-black text-white hover:bg-black/80 flex items-center gap-1.5"
+          <div className="hidden md:flex items-center gap-3">
+            <Link
+              to="/student-login"
+              className="px-4 py-2 text-sm font-semibold bg-primary text-white rounded-md hover:bg-primary/80 transition-colors shadow-md shadow-primary/30"
+              data-ocid="nav.student_login.button"
             >
-              <GraduationCap className="w-4 h-4" /> Student Login
-            </Button>
-          </Link>
-          <Link to="/admin-login" data-ocid="nav.admin_login_link">
-            <Button
-              size="sm"
-              className="bg-black text-white hover:bg-black/80 flex items-center gap-1.5"
+              Student Login
+            </Link>
+            <Link
+              to="/admin"
+              className="px-4 py-2 text-sm font-semibold bg-primary text-white rounded-md hover:bg-primary/80 transition-colors shadow-md shadow-primary/30"
+              data-ocid="nav.admin_login.button"
             >
-              <ShieldCheck className="w-4 h-4" /> Admin Login
-            </Button>
-          </Link>
+              Admin Login
+            </Link>
+          </div>
+
+          {/* Mobile toggle */}
+          <button
+            type="button"
+            className="md:hidden p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            onClick={() => setOpen(!open)}
+          >
+            {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
 
-        <button
-          type="button"
-          className="md:hidden text-white p-2"
-          onClick={() => setMobileOpen(!mobileOpen)}
-        >
-          {mobileOpen ? (
-            <X className="w-5 h-5" />
-          ) : (
-            <Menu className="w-5 h-5" />
-          )}
-        </button>
+        {/* Mobile menu */}
+        {open && (
+          <div className="md:hidden border-t border-border py-4 flex flex-col gap-3 bg-background">
+            <Link
+              to="/"
+              className="px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary rounded-md transition-colors"
+              onClick={() => setOpen(false)}
+            >
+              Home
+            </Link>
+            <Link
+              to="/rooms"
+              className="px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary rounded-md transition-colors"
+              onClick={() => setOpen(false)}
+            >
+              Rooms
+            </Link>
+            <Link
+              to="/student-login"
+              className="px-4 py-2 text-sm font-semibold bg-primary text-white rounded-md text-center"
+              onClick={() => setOpen(false)}
+            >
+              Student Login
+            </Link>
+            <Link
+              to="/admin"
+              className="px-4 py-2 text-sm font-semibold bg-primary text-white rounded-md text-center"
+              onClick={() => setOpen(false)}
+            >
+              Admin Login
+            </Link>
+          </div>
+        )}
       </div>
-
-      {mobileOpen && (
-        <div className="md:hidden bg-navy-800 border-t border-navy-700 px-4 py-3 flex flex-col gap-2">
-          {navLinks.map((link) => (
-            <Link
-              key={link.ocid}
-              to={link.to}
-              data-ocid={link.ocid}
-              className="px-3 py-2 text-sm font-medium text-navy-100 rounded-md hover:bg-navy-700"
-              onClick={() => setMobileOpen(false)}
-            >
-              {link.label}
-            </Link>
-          ))}
-          <div className="pt-2 border-t border-navy-700 flex flex-col gap-2">
-            <Link to="/student-login" onClick={() => setMobileOpen(false)}>
-              <Button
-                size="sm"
-                className="w-full bg-black text-white hover:bg-black/80 flex items-center gap-1.5 justify-center"
-              >
-                <GraduationCap className="w-4 h-4" /> Student Login
-              </Button>
-            </Link>
-            <Link to="/admin-login" onClick={() => setMobileOpen(false)}>
-              <Button
-                size="sm"
-                className="w-full bg-black text-white hover:bg-black/80 flex items-center gap-1.5 justify-center"
-              >
-                <ShieldCheck className="w-4 h-4" /> Admin Login
-              </Button>
-            </Link>
-          </div>
-        </div>
-      )}
     </header>
   );
 }

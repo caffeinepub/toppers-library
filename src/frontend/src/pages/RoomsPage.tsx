@@ -1,235 +1,165 @@
-import type { Room } from "@/backend.d";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useBookedSeatIdsByRoom, useRooms } from "@/hooks/useQueries";
-import { useNavigate } from "@tanstack/react-router";
-import { ChevronRight, CreditCard, Snowflake, Star, Users } from "lucide-react";
-import { motion } from "motion/react";
-
-function conditionColor(condition: string) {
-  switch (condition.toLowerCase()) {
-    case "excellent":
-      return "bg-green-100 text-green-700 border-green-200";
-    case "good":
-      return "bg-blue-100 text-blue-700 border-blue-200";
-    case "fair":
-      return "bg-yellow-100 text-yellow-700 border-yellow-200";
-    default:
-      return "bg-gray-100 text-gray-600 border-gray-200";
-  }
-}
-
-function RoomCard({ room, index }: { room: Room; index: number }) {
-  const navigate = useNavigate();
-  const ocid = `rooms.item.${index}`;
-  const { data: bookedIds } = useBookedSeatIdsByRoom(room.id);
-  const totalSeats = Number(room.capacity);
-  const bookedCount = bookedIds?.length ?? 0;
-  const availableSeats = Math.max(0, totalSeats - bookedCount);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.08, duration: 0.45 }}
-      data-ocid={ocid}
-      className="bg-card border border-border rounded-xl overflow-hidden shadow-navy-sm hover:shadow-navy-md transition-all group"
-    >
-      <div className="bg-navy-800 px-5 py-5 flex items-start justify-between">
-        <div>
-          <h3 className="font-display text-xl font-bold text-white">
-            {room.name}
-          </h3>
-          {room.isAC && (
-            <Badge className="mt-1.5 bg-blue-500/20 text-blue-200 border-blue-400/30 text-xs">
-              <Snowflake className="w-3 h-3 mr-1" /> Air Conditioned
-            </Badge>
-          )}
-        </div>
-        <span
-          className={`px-2.5 py-1 rounded-full text-xs font-medium border ${conditionColor(room.condition)}`}
-        >
-          {room.condition}
-        </span>
-      </div>
-
-      <div className="p-5">
-        <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
-          {room.description}
-        </p>
-
-        <div className="flex items-center gap-4 text-sm mb-3">
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <Users className="w-4 h-4" />
-            <span>{totalSeats} seats total</span>
-          </div>
-        </div>
-
-        {/* Live seat availability */}
-        <div className="mb-5 bg-muted/60 rounded-lg px-4 py-3">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-medium text-foreground">
-              Seats Available
-            </span>
-            <span
-              className={`text-xs font-bold ${
-                availableSeats === 0
-                  ? "text-red-600"
-                  : availableSeats < 5
-                    ? "text-orange-600"
-                    : "text-emerald-600"
-              }`}
-            >
-              {availableSeats} of {totalSeats}
-            </span>
-          </div>
-          <div className="h-2 bg-border rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${
-                availableSeats === 0
-                  ? "bg-red-500"
-                  : availableSeats < 5
-                    ? "bg-orange-400"
-                    : "bg-emerald-500"
-              }`}
-              style={{
-                width: `${totalSeats > 0 ? (availableSeats / totalSeats) * 100 : 0}%`,
-              }}
-            />
-          </div>
-        </div>
-
-        <Button
-          className="w-full bg-black text-white hover:bg-black/80 transition-colors"
-          size="sm"
-          onClick={() =>
-            navigate({
-              to: "/rooms/$roomId",
-              params: { roomId: room.id.toString() },
-            })
-          }
-        >
-          View &amp; Book Seats <ChevronRight className="w-4 h-4 ml-1" />
-        </Button>
-      </div>
-    </motion.div>
-  );
-}
-
-function PricingTable() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.2 }}
-      className="bg-card border border-border rounded-xl p-6 shadow-navy-sm mb-10"
-    >
-      <div className="flex items-center gap-2 mb-5">
-        <CreditCard className="w-5 h-5 text-primary" />
-        <h2 className="font-display text-xl font-semibold text-foreground">
-          Monthly Pricing Plans
-        </h2>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100">
-          <div>
-            <p className="text-base font-semibold text-blue-800">Half Day</p>
-            <p className="text-sm text-blue-600">1 shift/day for 30 days</p>
-            <p className="text-xs text-blue-400 mt-1">
-              Your preferred shift schedule
-            </p>
-          </div>
-          <div className="text-right">
-            <span className="text-2xl font-bold text-blue-700">₹600</span>
-            <span className="text-xs text-blue-500 block">/month</span>
-          </div>
-        </div>
-        <div className="flex items-center justify-between p-4 bg-navy-800 rounded-xl border border-navy-700">
-          <div>
-            <p className="text-base font-semibold text-white">Full Day</p>
-            <p className="text-sm text-navy-300">All shifts/day for 30 days</p>
-            <p className="text-xs text-navy-400 mt-1">(6:00 AM – 10:00 PM)</p>
-          </div>
-          <div className="text-right">
-            <span className="text-2xl font-bold text-gold-500">₹1,200</span>
-            <span className="text-xs text-navy-400 block">/month</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 bg-amber-50 border border-amber-100 rounded-lg p-3">
-        <p className="text-xs text-amber-700">
-          💡 Monthly plans are valid for 30 days from your booking start date.
-          Best value for regular visitors!
-        </p>
-      </div>
-    </motion.div>
-  );
-}
+import { useRooms, useSeats } from "@/hooks/useQueries";
+import { Link } from "@tanstack/react-router";
+import { ArrowRight, BookOpen, Thermometer, Users } from "lucide-react";
 
 export function RoomsPage() {
-  const { data: rooms, isLoading: roomsLoading } = useRooms();
+  const { data: rooms = [], isLoading: roomsLoading } = useRooms();
+  const { data: seats = [], isLoading: seatsLoading } = useSeats();
+
+  const loading = roomsLoading || seatsLoading;
+
+  const getAvailableCount = (roomId: bigint) =>
+    seats.filter((s) => s.roomId === roomId && s.isAvailable).length;
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="bg-navy-800 py-14">
-        <div className="container mx-auto px-4">
-          <h1 className="font-display text-4xl md:text-5xl font-bold text-white mb-3">
-            Study Rooms
+      {/* Hero */}
+      <section className="relative min-h-[45vh] flex items-center text-white overflow-hidden">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: "url('/assets/uploads/Untitled-design-1--1.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+        <div className="absolute inset-0 bg-black/72" />
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-950/50 to-transparent" />
+        <div className="relative z-10 w-full max-w-5xl mx-auto px-6 md:px-16 py-16">
+          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-5">
+            <BookOpen className="w-4 h-4 text-amber-400" />
+            <span className="text-sm text-white/90 font-medium">
+              Premium Study Spaces
+            </span>
+          </div>
+          <h1 className="font-display text-5xl md:text-6xl font-bold mb-4">
+            Study <span className="text-amber-400">Rooms</span>
           </h1>
-          <p className="text-navy-200 text-lg">
-            Choose your perfect air-conditioned study space
+          <p className="text-lg text-white/70 max-w-xl">
+            Two air-conditioned halls with 80 premium seats. Choose your room
+            and book your preferred seat.
           </p>
         </div>
-      </div>
+      </section>
 
-      <div className="container mx-auto px-4 py-12">
-        <PricingTable />
-
-        {roomsLoading ? (
-          <div
-            data-ocid="rooms.loading_state"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {["r1", "r2", "r3"].map((k) => (
-              <div
-                key={k}
-                className="rounded-xl overflow-hidden border border-border"
-              >
-                <Skeleton className="h-24 w-full" />
-                <div className="p-5 space-y-3">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
-                  <Skeleton className="h-9 w-full" />
+      {/* Room Cards */}
+      <section className="py-16">
+        <div className="max-w-5xl mx-auto px-4">
+          {loading ? (
+            <div className="grid md:grid-cols-2 gap-6">
+              {[1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="bg-card rounded-xl border border-border p-8"
+                >
+                  <Skeleton className="h-6 w-32 mb-3 bg-secondary" />
+                  <Skeleton className="h-4 w-48 mb-6 bg-secondary" />
+                  <Skeleton className="h-20 w-full mb-6 bg-secondary" />
+                  <Skeleton className="h-10 w-full bg-secondary" />
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : !rooms || rooms.length === 0 ? (
-          <div data-ocid="rooms.empty_state" className="text-center py-20">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted mb-4">
-              <Star className="w-8 h-8 text-muted-foreground" />
+              ))}
             </div>
-            <h3 className="font-display text-xl font-semibold text-foreground mb-2">
-              No Rooms Available
-            </h3>
-            <p className="text-muted-foreground">
-              Check back soon — new study rooms coming shortly.
-            </p>
-          </div>
-        ) : (
-          <div
-            data-ocid="rooms.list"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {rooms.map((room, i) => (
-              <RoomCard key={room.id.toString()} room={room} index={i + 1} />
-            ))}
-          </div>
-        )}
-      </div>
+          ) : rooms.length === 0 ? (
+            <div className="text-center py-20" data-ocid="rooms.empty_state">
+              <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
+                <BookOpen className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground text-lg">
+                Rooms are being set up. Please try again in a moment.
+              </p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6">
+              {rooms.map((room, idx) => {
+                const available = getAvailableCount(room.id);
+                const capacity = Number(room.capacity);
+                const booked = capacity - available;
+                const pct =
+                  capacity > 0 ? Math.round((booked / capacity) * 100) : 0;
+
+                return (
+                  <div
+                    key={room.id.toString()}
+                    className="bg-card rounded-xl border border-border p-8 shadow-lg shadow-black/20 hover:border-primary/40 hover:shadow-primary/10 transition-all duration-300 group"
+                    data-ocid={`rooms.item.${idx + 1}`}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h2 className="font-display text-2xl font-bold text-foreground">
+                          {room.name}
+                        </h2>
+                        <p className="text-muted-foreground text-sm mt-1">
+                          {room.description}
+                        </p>
+                      </div>
+                      {room.isAC && (
+                        <span className="flex items-center gap-1 text-xs bg-primary/20 text-primary border border-primary/30 rounded-full px-3 py-1 font-medium">
+                          <Thermometer className="w-3 h-3" /> AC
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div className="bg-secondary rounded-lg p-3 text-center border border-border">
+                        <div className="text-2xl font-bold text-foreground">
+                          {capacity}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Total Seats
+                        </div>
+                      </div>
+                      <div className="bg-emerald-500/10 rounded-lg p-3 text-center border border-emerald-500/20">
+                        <div className="text-2xl font-bold text-emerald-400">
+                          {available}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Available
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Occupancy bar */}
+                    <div className="mb-6">
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span>Occupancy</span>
+                        <span>{pct}%</span>
+                      </div>
+                      <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary rounded-full transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Users className="w-4 h-4" />
+                        <span>
+                          {booked} / {capacity} booked
+                        </span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {room.condition}
+                      </span>
+                    </div>
+
+                    <Link
+                      to="/rooms/$roomId"
+                      params={{ roomId: room.id.toString() }}
+                      className="flex items-center justify-center gap-2 w-full py-3 bg-primary text-white font-semibold rounded-md hover:bg-primary/80 transition-colors shadow-md shadow-primary/20 group-hover:shadow-primary/40"
+                      data-ocid={`rooms.book.button.${idx + 1}`}
+                    >
+                      View Seats <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
     </main>
   );
 }

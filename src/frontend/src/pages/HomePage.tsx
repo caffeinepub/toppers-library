@@ -1,113 +1,61 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowRight,
   BookOpen,
   CheckCircle,
-  ChevronRight,
-  CreditCard,
-  Layers,
-  Shield,
-  Snowflake,
+  Sparkles,
   Star,
-  Users,
 } from "lucide-react";
-import { motion } from "motion/react";
 
-const features = [
-  {
-    icon: Snowflake,
-    title: "Air Conditioned Rooms",
-    description:
-      "Powerful AC systems maintain a cool, comfortable environment — perfect for long study sessions even in peak summer.",
-    badge: "Cool & Fresh",
-    color: "text-blue-500",
-    bg: "bg-blue-50",
-  },
-  {
-    icon: Star,
-    title: "Premium Seating",
-    description:
-      "Ergonomic chairs and spacious desks designed for maximum comfort during extended study hours.",
-    badge: "Ergonomic",
-    color: "text-gold-500",
-    bg: "bg-amber-50",
-  },
-  {
-    icon: Shield,
-    title: "Best Conditions",
-    description:
-      "Regularly maintained spaces with excellent lighting, noise insulation, and a calm focused atmosphere.",
-    badge: "Top Quality",
-    color: "text-emerald-500",
-    bg: "bg-emerald-50",
-  },
-  {
-    icon: BookOpen,
-    title: "Monthly Plans",
-    description:
-      "Flexible monthly plans at unbeatable rates — Half Day at ₹600 or Full Day at ₹1,200 per month.",
-    badge: "Great Value",
-    color: "text-purple-500",
-    bg: "bg-purple-50",
-  },
-];
-
-const stats = [
-  { value: "80", label: "Premium Seats", sub: "Across 2 AC rooms" },
-  { value: "100%", label: "AC Rooms", sub: "Year-round cooling" },
-  { value: "₹600", label: "Starting Price", sub: "Per month, half day" },
-  { value: "30", label: "Day Plans", sub: "Flexible monthly access" },
-];
-
-const steps = [
-  {
-    step: "01",
-    title: "Choose Your Room",
-    desc: "Browse Hall A (60 seats) or Hall B (20 seats) — both fully air-conditioned.",
-    icon: Layers,
-  },
-  {
-    step: "02",
-    title: "Select a Seat & Plan",
-    desc: "Pick your preferred seat and choose Half Day or Full Day monthly plan.",
-    icon: CheckCircle,
-  },
-  {
-    step: "03",
-    title: "Pay via UPI",
-    desc: "Scan the QR code or use the UPI ID to complete your payment instantly.",
-    icon: CreditCard,
-  },
-];
-
-const monthlyPlans = [
+const PLANS = [
   {
     name: "Half Day",
     price: "₹600",
-    period: "/month",
-    description: "Perfect for focused morning or evening study sessions.",
+    period: "per month",
+    desc: "One shift per day. Best for part-time study sessions.",
     features: [
-      "Your preferred shift schedule",
-      "Fixed seat for 30 days",
-      "AC room access",
-      "Premium seating",
+      "Morning OR Evening shift",
+      "AC hall access",
+      "Comfortable seating",
+      "1 month validity",
     ],
     highlight: false,
   },
   {
     name: "Full Day",
     price: "₹1,200",
-    period: "/month",
-    description: "Unlimited access from opening to closing, every day.",
+    period: "per month",
+    desc: "All shifts per day. Unlimited daily access.",
     features: [
-      "6:00 AM – 10:00 PM access",
-      "Fixed seat for 30 days",
-      "Priority seat selection",
-      "AC room access",
+      "Morning AND Evening shifts",
+      "AC hall access",
+      "Priority seating",
+      "1 month validity",
     ],
     highlight: true,
+  },
+];
+
+const STEPS = [
+  {
+    step: "01",
+    title: "Choose Room",
+    desc: "Browse Hall A (60 seats) or Hall B (20 seats) and check live availability.",
+  },
+  {
+    step: "02",
+    title: "Pick Your Seat",
+    desc: "Select your preferred seat from the interactive seat map.",
+  },
+  {
+    step: "03",
+    title: "Pay via UPI",
+    desc: "Scan QR code or use UPI ID to complete payment. Save your transaction ID.",
+  },
+  {
+    step: "04",
+    title: "Admin Confirms",
+    desc: "Admin verifies payment and activates your booking. You receive login credentials.",
   },
 ];
 
@@ -115,296 +63,231 @@ export function HomePage() {
   return (
     <main>
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: "url('/assets/uploads/Untitled-design-1--1.png')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
-        <div className="absolute inset-0 bg-navy-900/65" />
-        <div
-          data-ocid="hero.section"
-          className="relative z-10 container mx-auto px-4 py-32 md:py-44"
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-            className="max-w-3xl"
-          >
-            <Badge className="mb-5 bg-gold-500/20 text-gold-300 border-gold-500/30 font-medium">
-              <Snowflake className="w-3.5 h-3.5 mr-1" /> Premium AC Study Rooms
-              — Prayagraj
-            </Badge>
-            <h1 className="font-display text-5xl md:text-7xl font-bold text-white leading-tight mb-6">
-              Study in <span className="text-gold-500">Comfort</span> at Toppers
-              Library
-            </h1>
-            <p className="text-white/80 text-lg md:text-xl leading-relaxed mb-10 max-w-2xl">
-              Reserve your dedicated seat in premium air-conditioned study
-              rooms. Ergonomic chairs, pristine conditions, and a focused
-              atmosphere built for serious learners.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/rooms">
-                <Button
-                  data-ocid="hero.primary_button"
-                  size="lg"
-                  className="bg-gold-500 text-navy-900 font-bold text-base hover:bg-gold-300 shadow-navy-lg px-8"
-                >
-                  Reserve Your Seat <ChevronRight className="w-5 h-5 ml-1" />
-                </Button>
-              </Link>
-              <Link to="/rooms">
-                <Button
-                  data-ocid="hero.secondary_button"
-                  size="lg"
-                  className="bg-black text-white border-black hover:bg-black/80 text-base px-8"
-                >
-                  <BookOpen className="w-5 h-5 mr-2" /> View Rooms
-                </Button>
-              </Link>
+      <section
+        className="relative min-h-[90vh] flex items-center text-white"
+        style={{
+          backgroundImage: "url('/assets/uploads/Untitled-design-1--1.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div className="absolute inset-0 bg-black/70" />
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-950/60 to-transparent" />
+        <div className="relative z-10 px-6 md:px-16 max-w-5xl">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span className="text-sm font-medium text-white/90">
+              Premium AC Study Halls — Lucknow
+            </span>
+          </div>
+
+          {/* Heading */}
+          <h1 className="font-display text-5xl md:text-7xl font-bold mb-6 leading-tight">
+            Study in <span className="text-amber-400">Comfort</span>
+            <br />
+            at Toppers Library
+          </h1>
+
+          {/* Subtitle */}
+          <p className="text-lg md:text-xl text-white/75 mb-10 max-w-2xl leading-relaxed">
+            Reserve your dedicated seat in premium air-conditioned study rooms.
+            Ergonomic chairs, pristine conditions, and a focused atmosphere
+            built for serious learners.
+          </p>
+
+          {/* Buttons */}
+          <div className="flex flex-wrap gap-4">
+            <Link
+              to="/rooms"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-amber-400 text-zinc-900 font-semibold rounded-md hover:bg-amber-300 transition-colors text-base shadow-lg shadow-amber-400/20"
+              data-ocid="hero.reserve_seat.button"
+            >
+              Reserve Your Seat
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+            <Link
+              to="/rooms"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-md hover:bg-white/20 transition-colors text-base border border-white/20"
+              data-ocid="hero.view_rooms.button"
+            >
+              <BookOpen className="w-5 h-5" />
+              View Rooms
+            </Link>
+          </div>
+
+          {/* Trust badges */}
+          <div className="mt-12 flex flex-wrap gap-6">
+            {[
+              { icon: Star, text: "100+ Happy Students" },
+              { icon: BookOpen, text: "80 Premium Seats" },
+              { icon: Sparkles, text: "Air Conditioned Halls" },
+            ].map((item) => (
+              <div
+                key={item.text}
+                className="flex items-center gap-2 text-white/70 text-sm"
+              >
+                <item.icon className="w-4 h-4 text-amber-400" />
+                {item.text}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Stats bar */}
+      <section className="bg-card border-b border-border py-6">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          {[
+            { val: "80", label: "Total Seats" },
+            { val: "2", label: "AC Rooms" },
+            { val: "₹600", label: "Half Day / Month" },
+            { val: "₹1,200", label: "Full Day / Month" },
+          ].map((item) => (
+            <div key={item.label}>
+              <div className="text-3xl font-display font-bold text-accent">
+                {item.val}
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">
+                {item.label}
+              </div>
             </div>
-          </motion.div>
+          ))}
         </div>
       </section>
 
-      {/* Stats Bar */}
-      <section className="bg-navy-800 py-10">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {stats.map((s, i) => (
-              <motion.div
-                key={s.label}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1, duration: 0.4 }}
-                className="text-center"
-              >
-                <p className="font-display text-3xl md:text-4xl font-bold text-gold-500 mb-1">
-                  {s.value}
-                </p>
-                <p className="text-white font-semibold text-sm">{s.label}</p>
-                <p className="text-navy-300 text-xs mt-0.5">{s.sub}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
+      {/* Plans */}
       <section className="py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-14"
-          >
-            <h2 className="font-display text-4xl font-bold text-foreground mb-4">
-              Why Choose Toppers Library?
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              Every detail is designed for your best study experience
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-3">
+              Pricing
             </p>
-          </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((f, i) => (
-              <motion.div
-                key={f.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1, duration: 0.5 }}
-                className="bg-card rounded-xl p-6 border border-border shadow-navy-sm hover:shadow-navy-md transition-shadow group"
-              >
-                <div
-                  className={`w-12 h-12 rounded-xl ${f.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}
-                >
-                  <f.icon className={`w-6 h-6 ${f.color}`} />
-                </div>
-                <Badge variant="secondary" className="mb-3 text-xs">
-                  {f.badge}
-                </Badge>
-                <h3 className="font-display text-lg font-semibold text-foreground mb-2">
-                  {f.title}
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {f.description}
-                </p>
-              </motion.div>
-            ))}
+            <h2 className="font-display text-4xl font-bold text-foreground mb-3">
+              Monthly Plans
+            </h2>
+            <p className="text-muted-foreground">
+              Choose a plan that fits your study schedule
+            </p>
           </div>
-        </div>
-      </section>
-
-      {/* Monthly Plans */}
-      <section className="py-20 bg-navy-800">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-14"
-          >
-            <h2 className="font-display text-4xl font-bold text-white mb-4">
-              Simple Monthly Plans
-            </h2>
-            <p className="text-navy-200 text-lg max-w-xl mx-auto">
-              No hidden fees. Reserve your seat for 30 days with full
-              flexibility.
-            </p>
-          </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-            {monthlyPlans.map((plan, i) => (
-              <motion.div
+          <div className="grid md:grid-cols-2 gap-8">
+            {PLANS.map((plan) => (
+              <div
                 key={plan.name}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.12, duration: 0.4 }}
-                className={`rounded-2xl p-8 border ${
+                className={`rounded-xl border-2 p-8 transition-transform hover:-translate-y-1 ${
                   plan.highlight
-                    ? "bg-gold-500 border-gold-300 shadow-navy-lg"
-                    : "bg-navy-700 border-navy-600 hover:border-gold-500"
-                } transition-all`}
+                    ? "border-primary bg-primary/10 shadow-xl shadow-primary/20"
+                    : "border-border bg-card"
+                }`}
               >
-                {plan.highlight && (
-                  <Badge className="mb-3 bg-navy-900 text-gold-500 border-navy-700 text-xs font-bold">
-                    Most Popular
-                  </Badge>
-                )}
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="font-display text-4xl font-bold text-foreground">
+                    {plan.price}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {plan.period}
+                  </span>
+                </div>
                 <h3
-                  className={`font-display text-2xl font-bold mb-1 ${
-                    plan.highlight ? "text-navy-900" : "text-white"
+                  className={`font-display text-xl font-semibold mb-2 ${
+                    plan.highlight ? "text-accent" : "text-foreground"
                   }`}
                 >
                   {plan.name}
                 </h3>
-                <div className="flex items-end gap-1 mb-3">
-                  <span
-                    className={`font-display text-4xl font-bold ${
-                      plan.highlight ? "text-navy-900" : "text-gold-500"
-                    }`}
-                  >
-                    {plan.price}
-                  </span>
-                  <span
-                    className={`text-sm mb-1 ${
-                      plan.highlight ? "text-navy-700" : "text-navy-300"
-                    }`}
-                  >
-                    {plan.period}
-                  </span>
-                </div>
-                <p
-                  className={`text-sm mb-6 ${
-                    plan.highlight ? "text-navy-800" : "text-navy-300"
-                  }`}
-                >
-                  {plan.description}
+                <p className="text-sm mb-6 text-muted-foreground">
+                  {plan.desc}
                 </p>
-                <ul className="space-y-2.5 mb-8">
-                  {plan.features.map((feat) => (
-                    <li key={feat} className="flex items-center gap-2.5">
+                <ul className="space-y-2">
+                  {plan.features.map((f) => (
+                    <li
+                      key={f}
+                      className="flex items-center gap-2 text-sm text-foreground"
+                    >
                       <CheckCircle
                         className={`w-4 h-4 shrink-0 ${
-                          plan.highlight ? "text-navy-800" : "text-gold-500"
+                          plan.highlight ? "text-accent" : "text-emerald-400"
                         }`}
                       />
-                      <span
-                        className={`text-sm ${
-                          plan.highlight ? "text-navy-800" : "text-navy-200"
-                        }`}
-                      >
-                        {feat}
-                      </span>
+                      {f}
                     </li>
                   ))}
                 </ul>
-                <Link to="/rooms">
-                  <Button
-                    data-ocid="hero.primary_button"
-                    className={`w-full font-semibold ${
-                      plan.highlight
-                        ? "bg-navy-900 text-white hover:bg-navy-700"
-                        : "bg-gold-500 text-navy-900 hover:bg-gold-300"
-                    }`}
-                  >
-                    Reserve Your Spot <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+                <Link
+                  to="/rooms"
+                  className={`mt-8 block text-center px-6 py-3 rounded-md font-semibold text-sm transition-colors ${
+                    plan.highlight
+                      ? "bg-primary text-white hover:bg-primary/80 shadow-md shadow-primary/30"
+                      : "bg-secondary text-foreground hover:bg-secondary/80 border border-border"
+                  }`}
+                  data-ocid={`plans.${plan.name.toLowerCase().replace(" ", "_")}.button`}
+                >
+                  Book Now
                 </Link>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-14"
-          >
-            <h2 className="font-display text-4xl font-bold text-foreground mb-4">
+      {/* How it works */}
+      <section className="py-20 bg-card border-y border-border">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-3">
+              Process
+            </p>
+            <h2 className="font-display text-4xl font-bold text-foreground mb-3">
               How It Works
             </h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              Book your seat in three simple steps
+            <p className="text-muted-foreground">
+              4 simple steps to book your seat
             </p>
-          </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            {steps.map((s, i) => (
-              <motion.div
-                key={s.step}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.15, duration: 0.5 }}
-                className="text-center"
-              >
-                <div className="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-navy-800 mb-5">
-                  <s.icon className="w-7 h-7 text-gold-500" />
-                  <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-gold-500 text-navy-900 text-xs font-bold flex items-center justify-center">
-                    {i + 1}
-                  </span>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {STEPS.map((s) => (
+              <div key={s.step} className="text-center group">
+                <div className="w-14 h-14 bg-primary text-accent font-display font-bold text-xl rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/30 group-hover:shadow-primary/50 transition-shadow">
+                  {s.step}
                 </div>
-                <h3 className="font-display text-xl font-bold text-foreground mb-2">
+                <h3 className="font-display font-semibold text-foreground mb-2">
                   {s.title}
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {s.desc}
                 </p>
-              </motion.div>
+              </div>
             ))}
           </div>
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.4, duration: 0.4 }}
-            className="text-center mt-12"
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section
+        className="relative py-20 text-white overflow-hidden"
+        style={{
+          backgroundImage: "url('/assets/uploads/Untitled-design-1--1.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div className="absolute inset-0 bg-black/75" />
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/40 to-transparent" />
+        <div className="relative z-10 text-center max-w-2xl mx-auto px-4">
+          <h2 className="font-display text-4xl font-bold mb-4">
+            Ready to Start <span className="text-amber-400">Studying?</span>
+          </h2>
+          <p className="text-white/70 mb-8 text-lg">
+            Book your seat today and join hundreds of successful students
+          </p>
+          <Link
+            to="/rooms"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-amber-400 text-zinc-900 font-semibold rounded-md hover:bg-amber-300 transition-colors shadow-lg shadow-amber-400/20"
+            data-ocid="cta.view_rooms.button"
           >
-            <Link to="/rooms">
-              <Button
-                size="lg"
-                className="bg-black text-white hover:bg-black/80 px-10 font-semibold"
-                data-ocid="hero.secondary_button"
-              >
-                <Users className="w-5 h-5 mr-2" /> Explore Rooms
-              </Button>
-            </Link>
-          </motion.div>
+            View Available Rooms
+            <ArrowRight className="w-5 h-5" />
+          </Link>
         </div>
       </section>
     </main>

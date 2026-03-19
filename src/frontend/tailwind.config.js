@@ -10,14 +10,12 @@ export default {
     container: {
       center: true,
       padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
+      screens: { "2xl": "1400px" },
     },
     extend: {
       fontFamily: {
         display: ['Playfair Display', 'Georgia', 'serif'],
-        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "oklch(var(--border))",
@@ -70,35 +68,11 @@ export default {
           border: "oklch(var(--sidebar-border))",
           ring: "oklch(var(--sidebar-ring))",
         },
-        navy: {
-          50: "oklch(0.95 0.02 265)",
-          100: "oklch(0.88 0.04 265)",
-          200: "oklch(0.75 0.06 265)",
-          300: "oklch(0.60 0.08 265)",
-          400: "oklch(0.48 0.09 265)",
-          500: "oklch(0.38 0.09 265)",
-          600: "oklch(0.32 0.09 265)",
-          700: "oklch(0.28 0.09 265)",
-          800: "oklch(0.22 0.07 265)",
-          900: "oklch(0.16 0.05 265)",
-        },
-        gold: {
-          100: "oklch(0.95 0.05 75)",
-          300: "oklch(0.85 0.09 75)",
-          500: "oklch(0.75 0.12 75)",
-          700: "oklch(0.60 0.11 75)",
-        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-      },
-      boxShadow: {
-        xs: "0 1px 2px 0 rgba(0,0,0,0.05)",
-        "navy-sm": "0 2px 8px rgba(26,31,78,0.12)",
-        "navy-md": "0 4px 20px rgba(26,31,78,0.15)",
-        "navy-lg": "0 8px 40px rgba(26,31,78,0.20)",
       },
       keyframes: {
         "accordion-down": {

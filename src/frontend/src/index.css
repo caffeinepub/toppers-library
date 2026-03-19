@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,58 +6,53 @@
 
 @layer base {
   :root {
-    /* Light theme — clean white with navy text */
-    --background: 0.98 0.005 265;
-    --foreground: 0.15 0.05 265;
+    /* Premium dark slate theme */
+    --background: 0.11 0.02 265;
+    --foreground: 0.96 0.005 80;
 
-    --card: 1.0 0.0 0;
-    --card-foreground: 0.15 0.05 265;
+    --card: 0.16 0.025 265;
+    --card-foreground: 0.96 0.005 80;
 
-    --popover: 1.0 0.0 0;
-    --popover-foreground: 0.15 0.05 265;
+    --popover: 0.14 0.025 265;
+    --popover-foreground: 0.96 0.005 80;
 
-    /* Gold primary */
-    --primary: 0.72 0.13 75;
-    --primary-foreground: 0.1 0.04 265;
+    /* Indigo primary (replaces zinc-900 black) */
+    --primary: 0.55 0.22 265;
+    --primary-foreground: 0.99 0.0 0;
 
-    --secondary: 0.93 0.02 265;
-    --secondary-foreground: 0.2 0.05 265;
+    --secondary: 0.2 0.03 265;
+    --secondary-foreground: 0.85 0.01 80;
 
-    --muted: 0.93 0.015 265;
-    --muted-foreground: 0.45 0.04 265;
+    --muted: 0.2 0.03 265;
+    --muted-foreground: 0.55 0.02 265;
 
-    --accent: 0.93 0.015 265;
-    --accent-foreground: 0.15 0.05 265;
+    /* Gold/amber accent */
+    --accent: 0.83 0.15 75;
+    --accent-foreground: 0.12 0.02 265;
 
-    --destructive: 0.55 0.18 25;
-    --destructive-foreground: 0.97 0.005 0;
+    --destructive: 0.55 0.22 25;
+    --destructive-foreground: 0.99 0.0 0;
 
-    --border: 0.88 0.025 265;
-    --input: 0.88 0.025 265;
-    --ring: 0.72 0.13 75;
+    --border: 0.24 0.04 265;
+    --input: 0.22 0.035 265;
+    --ring: 0.55 0.22 265;
 
     --radius: 0.5rem;
 
-    /* Seat status colors */
-    --seat-available: 0.65 0.16 145;
-    --seat-occupied: 0.55 0.15 25;
-
-    /* Chart colors */
-    --chart-1: 0.72 0.13 75;
-    --chart-2: 0.55 0.15 145;
-    --chart-3: 0.55 0.18 25;
-    --chart-4: 0.55 0.14 220;
+    --chart-1: 0.83 0.15 75;
+    --chart-2: 0.55 0.22 265;
+    --chart-3: 0.62 0.16 145;
+    --chart-4: 0.55 0.2 25;
     --chart-5: 0.6 0.12 300;
 
-    /* Sidebar */
-    --sidebar: 0.16 0.05 265;
-    --sidebar-foreground: 0.93 0.01 265;
-    --sidebar-primary: 0.72 0.13 75;
-    --sidebar-primary-foreground: 0.1 0.04 265;
-    --sidebar-accent: 0.22 0.06 265;
-    --sidebar-accent-foreground: 0.93 0.01 265;
-    --sidebar-border: 0.26 0.05 265;
-    --sidebar-ring: 0.72 0.13 75;
+    --sidebar: 0.09 0.018 265;
+    --sidebar-foreground: 0.95 0.01 80;
+    --sidebar-primary: 0.55 0.22 265;
+    --sidebar-primary-foreground: 0.99 0.0 0;
+    --sidebar-accent: 0.18 0.03 265;
+    --sidebar-accent-foreground: 0.95 0.01 80;
+    --sidebar-border: 0.22 0.04 265;
+    --sidebar-ring: 0.55 0.22 265;
   }
 
   * {
@@ -66,7 +61,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: "DM Sans", sans-serif;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -76,27 +71,34 @@
   h4,
   h5,
   h6 {
-    font-family: "Playfair Display", serif;
+    font-family: "Playfair Display", Georgia, serif;
   }
 }
 
 @layer utilities {
-  .seat-available {
-    background-color: oklch(var(--seat-available));
+  .seat-green {
+    @apply bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer;
   }
-  .seat-occupied {
-    background-color: oklch(var(--seat-occupied));
+  .seat-amber {
+    @apply bg-amber-400 hover:bg-amber-500 text-zinc-900 cursor-pointer;
   }
-  .text-seat-available {
-    color: oklch(var(--seat-available));
+  .seat-red {
+    @apply bg-red-500/70 text-white cursor-not-allowed opacity-70;
   }
-  .text-seat-occupied {
-    color: oklch(var(--seat-occupied));
+  .admin-card {
+    @apply bg-zinc-900 border border-zinc-700 rounded-lg;
   }
-  .border-seat-available {
-    border-color: oklch(var(--seat-available));
+  .hero-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.09 0.06 265) 0%,
+      oklch(0.14 0.04 265) 50%,
+      oklch(0.09 0.03 265) 100%
+    );
   }
-  .border-seat-occupied {
-    border-color: oklch(var(--seat-occupied));
+  .glass-card {
+    background: oklch(0.16 0.025 265 / 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid oklch(0.35 0.06 265 / 0.4);
   }
 }

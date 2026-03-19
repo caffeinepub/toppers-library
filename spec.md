@@ -1,30 +1,38 @@
 # Toppers Library
 
 ## Current State
-Bookings have no expiry date. Seats stay occupied indefinitely once approved. Students have no way to renew/rebook from the Student Login page.
+The site has a light theme with black buttons, zinc-900 backgrounds, and amber accents. Pages (Rooms, SeatBooking) have plain layouts without hero sections. Navbar uses black buttons.
 
 ## Requested Changes (Diff)
 
 ### Add
-- `expiryDate` field to Booking (set to bookingDate + 30 days on creation)
-- `rebookSeat` backend function: creates a new booking for the same seat for another 30 days, generates new credentials
-- Expiry warning on Student Login page: yellow/orange notice when booking expires in 5 days or less
-- "Rebook" button on Student Login page so student can renew the same seat for another month
-- Auto-expire: when fetching seats, if a booking's expiryDate has passed and status is approved, the seat is freed
+- Full dark mode premium theme across all public pages (homepage, rooms, seat booking, student login)
+- Hero mode layout on every page: full-width hero banner with background image/gradient at the top of each page
+- Premium deep indigo/violet color palette replacing all black (#18181b / zinc-900) accent colors on buttons, cards, UI elements
+- Gold/amber accent colors remain for highlights
 
 ### Modify
-- `createBooking`: compute and store expiryDate (bookingDate + 30 days)
-- `getBookedSeatIds` / `isSeatAvailable`: exclude expired bookings
-- Student Login page: show expiry date, warning banner, and Rebook button
-- Admin Bookings tab: show expiry date column
+- Navbar: dark background, replace black buttons with deep indigo/violet buttons
+- HomePage: hero already exists, enhance with dark mode; stats bar and sections use dark premium styling
+- RoomsPage: add a hero banner at the top; cards redesigned for dark premium look
+- SeatBookingPage: add a hero banner at top; seat grid and booking dialogs use dark premium styling
+- StudentLoginPage: add a hero banner at top; form uses dark premium styling
+- Footer: dark premium styling
+- Text: body text uses appropriate light colors on dark backgrounds (white/zinc-100 on dark), dark text where background is light
+- All bg-zinc-900/black buttons → bg-indigo-700 or bg-violet-800 with hover states
+- Occupancy bar: replace zinc-900 fill with indigo/violet
+- Plan toggle buttons in booking dialog: replace zinc-900 active state with indigo
 
 ### Remove
-- Nothing removed
+- Light/white background sections on public pages (replaced with dark equivalents)
+- bg-zinc-50 / bg-white page backgrounds (replaced with dark slate/gray backgrounds)
 
 ## Implementation Plan
-1. Update Booking type to include `expiryDate: Text`
-2. Update `createBooking` to compute expiryDate
-3. Add `rebookSeat(bookingId, newTransactionId)` function -- creates a new booking with same seat/student/plan, new expiryDate
-4. Add `expireOldBookings()` utility called in `getSeatsByRoom` and `getBookedSeatIds` to free seats with passed expiryDate
-5. Frontend: Student Login page shows expiry date per booking, yellow warning if <= 5 days, Rebook button that opens a payment flow for the same seat/plan
-6. Admin Bookings table: add Expiry Date column
+1. Update index.css / global styles for dark theme base
+2. Rewrite Navbar with dark background and indigo/violet buttons
+3. Rewrite HomePage with enhanced dark hero + dark section backgrounds
+4. Rewrite RoomsPage with hero banner + dark premium cards
+5. Rewrite SeatBookingPage with hero banner + dark seat grid + dark dialogs
+6. Rewrite StudentLoginPage with hero banner + dark form
+7. Update Footer with dark premium styling
+8. All buttons and accents: indigo-700/violet-800 replacing zinc-900

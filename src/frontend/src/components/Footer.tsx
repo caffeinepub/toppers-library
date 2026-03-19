@@ -1,138 +1,81 @@
 import { Link } from "@tanstack/react-router";
-import { BookOpen, Clock, Mail, MapPin, Phone } from "lucide-react";
+import { BookOpen, Clock, MapPin, Phone } from "lucide-react";
 
 export function Footer() {
   const year = new Date().getFullYear();
-  const utmLink = `https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`;
+  const hostname =
+    typeof window !== "undefined" ? window.location.hostname : "";
+  const caffeineLink = `https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(hostname)}`;
 
   return (
-    <footer className="bg-navy-900 text-navy-200">
-      {/* Main footer content */}
-      <div className="container mx-auto px-4 py-14">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-          {/* Brand */}
-          <div className="lg:col-span-1">
+    <footer className="bg-card border-t border-border text-muted-foreground">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-gold-500 flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-navy-900" />
+              <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center shadow-md shadow-primary/30">
+                <BookOpen className="w-4 h-4 text-white" />
               </div>
-              <span className="font-display text-xl font-bold text-white">
-                Toppers <span className="text-gold-500">Library</span>
+              <span className="font-display font-bold text-foreground text-lg">
+                Toppers <span className="text-accent">Library</span>
               </span>
             </div>
-            <p className="text-navy-300 text-sm leading-relaxed">
-              Premium AC study rooms designed for serious learners. Focused
-              environment, ergonomic seating, and the best conditions for
-              academic excellence.
+            <p className="text-sm leading-relaxed">
+              Premium AC study halls in Lucknow. Book your seat for focused,
+              comfortable studying.
             </p>
           </div>
 
-          {/* Quick Links */}
           <div>
-            <h4 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">
-              Quick Links
-            </h4>
-            <ul className="space-y-2.5 text-sm">
-              <li>
-                <Link
-                  to="/"
-                  className="text-navy-300 hover:text-gold-500 transition-colors"
-                >
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/rooms"
-                  className="text-navy-300 hover:text-gold-500 transition-colors"
-                >
-                  Study Rooms
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/student-login"
-                  className="text-navy-300 hover:text-gold-500 transition-colors"
-                >
-                  Student Login
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/admin-login"
-                  className="text-navy-300 hover:text-gold-500 transition-colors"
-                >
-                  Admin Portal
-                </Link>
-              </li>
-            </ul>
+            <h3 className="font-semibold text-foreground mb-4">Contact</h3>
+            <div className="space-y-3">
+              <div className="flex items-start gap-2 text-sm">
+                <MapPin className="w-4 h-4 mt-0.5 text-accent shrink-0" />
+                <span>Neelmatha, Vijay Nagar, GNET, Lucknow</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Phone className="w-4 h-4 text-accent shrink-0" />
+                <span>6388259986</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Clock className="w-4 h-4 text-accent shrink-0" />
+                <span>6:00 AM – 10:00 PM (All Days)</span>
+              </div>
+            </div>
           </div>
 
-          {/* Plans */}
           <div>
-            <h4 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">
-              Monthly Plans
-            </h4>
-            <ul className="space-y-2.5 text-sm">
-              <li className="flex items-center justify-between">
-                <span className="text-navy-300">Half Day Plan</span>
-                <span className="text-gold-500 font-semibold">₹600/mo</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span className="text-navy-300">Full Day Plan</span>
-                <span className="text-gold-500 font-semibold">₹1,200/mo</span>
-              </li>
-              <li className="text-navy-400 text-xs mt-2">
-                Valid for 30 days from booking date.
-              </li>
-            </ul>
-          </div>
-
-          {/* Contact */}
-          <div>
-            <h4 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">
-              Contact & Hours
-            </h4>
-            <ul className="space-y-3 text-sm">
-              <li className="flex items-start gap-2.5">
-                <Phone className="w-4 h-4 text-gold-500 shrink-0 mt-0.5" />
-                <span className="text-navy-300">+91 63882 59986</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <MapPin className="w-4 h-4 text-gold-500 shrink-0 mt-0.5" />
-                <span className="text-navy-300">
-                  Toppers Library, Study Hub, Your City
-                </span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <Clock className="w-4 h-4 text-gold-500 shrink-0 mt-0.5" />
-                <span className="text-navy-300">
-                  Mon–Sun: 6:00 AM – 10:00 PM
-                </span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <Mail className="w-4 h-4 text-gold-500 shrink-0 mt-0.5" />
-                <span className="text-navy-300">topperslibrary@gmail.com</span>
-              </li>
-            </ul>
+            <h3 className="font-semibold text-foreground mb-4">Quick Links</h3>
+            <div className="flex flex-col gap-2 text-sm">
+              <Link to="/" className="hover:text-foreground transition-colors">
+                Home
+              </Link>
+              <Link
+                to="/rooms"
+                className="hover:text-foreground transition-colors"
+              >
+                View Rooms
+              </Link>
+              <Link
+                to="/student-login"
+                className="hover:text-foreground transition-colors"
+              >
+                Student Login
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Bottom bar */}
-      <div className="border-t border-navy-700">
-        <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-navy-400">
-          <p>© {year} Toppers Library. All rights reserved.</p>
-          <p>
-            <a
-              href={utmLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gold-500 hover:text-gold-300 transition-colors"
-            >
-              Built with ❤️ using caffeine.ai
-            </a>
-          </p>
+        <div className="border-t border-border mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span>© {year} Toppers Library. All rights reserved.</span>
+          <a
+            href={caffeineLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-foreground transition-colors"
+          >
+            Built with ❤️ using caffeine.ai
+          </a>
         </div>
       </div>
     </footer>
